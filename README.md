@@ -1,4 +1,13 @@
-# datagrep-cli Search Tool
+```
+     _       _                                        _ _ 
+  __| | __ _| |_ __ _  __ _ _ __ ___ _ __         ___| (_)
+ / _` |/ _` | __/ _` |/ _` | '__/ _ \ '_ \ _____ / __| | |
+| (_| | (_| | || (_| | (_| | | |  __/ |_) |_____| (__| | |
+ \__,_|\__,_|\__\__,_|\__, |_|  \___| .__/       \___|_|_|
+                      |___/         |_|                   
+```
+
+# datagrep-cli
 
 A powerful Python utility to search and filter CSV, JSON, or Excel records by field values with flexible matching modes, sorting, and output formats.
 
@@ -22,15 +31,43 @@ A powerful Python utility to search and filter CSV, JSON, or Excel records by fi
 ## Usage
 
 ```bash
-python search_csv.py <input_file> <columns> <value> [options]
+python search_csv.py [input_file] [columns] [value] [options]
 ```
+
+If no `columns` and `value` are provided, the tool displays the file schema and a sample of the first 10 rows.
 
 ### Examples
 
-#### Basic substring search
+#### Show schema and sample (no search)
 
 ```bash
-python search_csv.py arabic_sample.csv name أحمد
+python search_csv.py arabic_sample.csv
+```
+
+This displays field names with samples and the first 10 rows.
+
+#### Describe file schema
+
+```bash
+python search_csv.py arabic_sample.csv --describe
+```
+
+#### Count total records
+
+```bash
+python search_csv.py arabic_sample.csv --count
+```
+
+#### Show sample rows
+
+```bash
+python search_csv.py arabic_sample.csv --sample 5
+```
+
+#### Preview first rows
+
+```bash
+python search_csv.py arabic_sample.csv --preview 3
 ```
 
 #### Search multiple columns
@@ -87,11 +124,13 @@ python search_csv.py data.xlsx name John --input-format xlsx
 type arabic_sample.csv | python search_csv.py - name دبي --delimiter ,
 ```
 
-#### Colored table output
+#### Describe file schema
 
 ```bash
-python search_csv.py arabic_sample.csv name أحمد --output-format table --color
+python search_csv.py arabic_sample.csv name --describe
 ```
+
+This shows field names and sample values without searching.
 
 ## Options
 
@@ -110,6 +149,11 @@ python search_csv.py arabic_sample.csv name أحمد --output-format table --col
 - `--config` to load settings from JSON file
 - `--color` to colorize output (requires colorama)
 - `--progress` to show progress bar (requires tqdm)
+- `--preview` to show only the first N matching rows
+- `--sample` to show the first N rows as sample
+- `--verbose` or `-v` to enable verbose logging
+- `--debug` to enable debug logging
+- `--describe` to show field names and sample values
 - `--help` to display usage details
 
 ## Where Conditions
@@ -118,11 +162,14 @@ Use `--where` for pre-filtering records. Supported operators:
 
 - `==`, `!=`, `>`, `<`, `>=`, `<=` (numeric/string comparison)
 - `contains`, `startswith`, `endswith` (string operations)
+- `and`, `or` for combining conditions
 
 Examples:
 - `--where "age > 25"`
 - `--where "name contains John"`
 - `--where "city == London"`
+- `--where "age > 25 and city == London"`
+- `--where "name contains John or age < 30"`
 
 ## Configuration Files
 

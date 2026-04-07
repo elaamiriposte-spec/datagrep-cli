@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "datagrep-cli"
+version = "1.0.0"
+description = "Search and filter CSV, JSON, and Excel records with flexible matching modes"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Your Name", email = "your.email@example.com"},
+]
+requires-python = ">=3.7"
+keywords = ["search", "filter", "csv", "json", "excel", "grep"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Utilities",
+]
+
+[project.optional-dependencies]
+color = ["colorama>=0.4.3"]
+progress = ["tqdm>=4.50.0"]
+excel = ["openpyxl>=3.0.0"]
+dev = ["pytest>=6.0", "black", "flake8", "pytest-cov"]
+
+[project.scripts]
+datagrep = "datagrep:main"
+
+[project.urls]
+Homepage = "https://github.com/yourusername/datagrep-cli"
+Issues = "https://github.com/yourusername/datagrep-cli/issues"
+
+[tool.black]
+line-length = 100
+target-version = ['py37']
+
+[tool.pytest.ini_options]
+testpaths = ["tests.py"]
+addopts = "-v --cov=datagrep"

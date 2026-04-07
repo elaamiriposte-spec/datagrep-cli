@@ -286,9 +286,6 @@ def main():
             if hasattr(args, key):
                 setattr(args, key, value)
 
-columns = [col.strip() for col in args.columns.split(',') if col.strip()] if args.columns else available_columns
-    selected_columns = [col.strip() for col in args.select.split(',') if col.strip()]
-
     try:
         with open_input_file(args.input_file, args.encoding) as csvfile:
             input_format = args.input_format
@@ -323,6 +320,9 @@ columns = [col.strip() for col in args.columns.split(',') if col.strip()] if arg
                         if key not in seen:
                             seen.add(key)
                             available_columns.append(key)
+
+            columns = [col.strip() for col in args.columns.split(',') if col.strip()] if args.columns else list(available_columns)
+            selected_columns = [col.strip() for col in args.select.split(',') if col.strip()]
 
             logging.info("Loaded %d records with fields: %s", len(records), ', '.join(available_columns))
 
