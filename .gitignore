@@ -59,10 +59,36 @@ env/
 *~
 .DS_Store
 
-# Project specific
-*.csv
-*.json
-*.xlsx
-*.log
-/output/
+# Build and distribution
+build/
+dist/
+*.egg-info/
+
+# Testing and coverage
+htmlcov/
+.coverage
+.coverage.*
+
+# IDE and editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Project specific build outputs
+/build/
+/dist/
+*.tar.gz
+*.zip
+
+# Temporary files
 /temp/
+/tmp/
+*.bak
+*.tmp

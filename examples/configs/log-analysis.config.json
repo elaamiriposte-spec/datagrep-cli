@@ -1,0 +1,13 @@
+{
+  "comment": "Example for analyzing log files with filtering and sorting",
+  "input_file": "application.log.json",
+  "columns": "level,message,timestamp",
+  "input_format": "json",
+  "output_format": "json",
+  "mode": "regex",
+  "sort": "timestamp:desc",
+  "where": "level != DEBUG",
+  "color": false,
+  "verbose": true,
+  "limit": 100
+}

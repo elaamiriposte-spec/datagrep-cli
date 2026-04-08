@@ -1,0 +1,13 @@
+{
+  "comment": "Example configuration for product inventory search with progress tracking",
+  "input_file": "products.xlsx",
+  "columns": "sku,name,category",
+  "input_format": "xlsx",
+  "output_format": "csv",
+  "mode": "startswith",
+  "where": "quantity > 0",
+  "sort": "category:asc",
+  "select": "sku,name,category,price",
+  "progress": true,
+  "encoding": "utf-8"
+}

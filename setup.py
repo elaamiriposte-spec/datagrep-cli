@@ -20,7 +20,8 @@ setup(
         'Source Code': 'https://github.com/yourusername/datagrep-cli',
     },
     license='MIT',
-    py_modules=['datagrep'],
+    packages=find_packages(where='src'),
+    package_dir={'': 'src'},
     python_requires='>=3.7',
     install_requires=[],
     extras_require={

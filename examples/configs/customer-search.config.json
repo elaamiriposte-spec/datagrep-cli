@@ -1,0 +1,9 @@
+{
+  "comment": "Example configuration for searching customer data",
+  "input_file": "customers.csv",
+  "columns": "name,email,city",
+  "output_format": "table",
+  "color": true,
+  "ignore_case": true,
+  "mode": "contains"
+}

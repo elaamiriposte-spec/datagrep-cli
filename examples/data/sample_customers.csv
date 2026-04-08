@@ -1,0 +1,6 @@
+name,email,city,country,status
+John Smith,john.smith@example.com,New York,USA,active
+Jane Doe,jane.doe@example.com,London,UK,active
+Ahmed Ali,ahmed.ali@example.com,Cairo,Egypt,inactive
+Maria Garcia,maria.garcia@example.com,Madrid,Spain,active
+Liu Wei,liu.wei@example.com,Beijing,China,active
