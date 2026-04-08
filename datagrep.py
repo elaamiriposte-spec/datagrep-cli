@@ -1,3 +1,5 @@
+"""datagrep - powerful command-line data search tool for CSV, JSON, and Excel files."""
+
 import argparse
 import csv
 import io
@@ -8,6 +10,10 @@ import os
 import re
 import sys
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, TextIO, Tuple, Union
+from collections.abc import Iterator
+
+__version__ = "1.0.0"
 
 try:
     import colorama
@@ -34,23 +40,37 @@ class DataGrepError(Exception):
     pass
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
+    """Parse command-line arguments.
+    
+    Returns:
+        Namespace with parsed arguments.
+    """
     parser = argparse.ArgumentParser(
         prog='datagrep',
         description='Search CSV, JSON, or Excel records by field values with flexible matching modes.',
-        epilog='Use - for input_file to read from stdin. Inspection modes do not require search parameters.'
+        epilog='Use - for input_file to read from stdin. Inspection modes do not require search parameters.',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        add_help=True
     )
+    
+    parser.add_argument(
+        '--version', action='version', version=f'%(prog)s {__version__}',
+        help='Show version and exit.'
+    )
+    
     parser.add_argument('input_file', nargs='?', default='-', help='Input file path or - for stdin.')
     parser.add_argument('columns', nargs='?', default=None, help='Comma-separated field names to search.')
     parser.add_argument('value', nargs='?', default=None, help='Search value or pattern.')
+    
     parser.add_argument(
         '--input-format', choices=['auto', 'csv', 'json', 'xlsx'], default='auto',
-        help='Input format to read: csv, json, xlsx, or auto-detect from file extension/content.'
+        help='Input format: auto-detect (default), csv, json, or xlsx.'
     )
     parser.add_argument(
         '--mode', choices=['contains', 'exact', 'startswith', 'endswith', 'regex'],
         default='contains',
-        help='Search mode to use (default: contains).'
+        help='Search mode: contains (default), exact, startswith, endswith, or regex.'
     )
     parser.add_argument(
         '--ignore-case', '-i', action='store_true', help='Ignore case while searching.'
@@ -63,27 +83,27 @@ def parse_args():
     )
     parser.add_argument(
         '--output-format', choices=['csv', 'json', 'table', 'raw'], default='csv',
-        help='Output format for matching rows (default: csv).'
+        help='Output format: csv (default), json, table, or raw.'
     )
     parser.add_argument(
         '--select', '-s', default='*',
-        help='Comma-separated fields to include in output (default: all fields).'
+        help='Comma-separated fields to include in output (default: all).'
     )
     parser.add_argument(
-        '--output', '-o', help='Write results to a file instead of stdout.'
+        '--output', '-o', help='Write results to file instead of stdout.'
     )
     parser.add_argument(
         '--limit', '-n', type=int, default=0,
-        help='Maximum number of matching rows to print (0 = no limit).'
+        help='Maximum matching rows to print (0=unlimited, default).'
     )
     parser.add_argument(
-        '--sort', help='Sort records by column:asc or column:desc before searching.'
+        '--sort', help='Sort by column: "name:asc" or "name:desc" before searching.'
     )
     parser.add_argument(
-        '--where', help='Filter records with condition like "column > value" before searching.'
+        '--where', help='Filter records with condition: "column op value" (or/and supported).'
     )
     parser.add_argument(
-        '--count', action='store_true', help='Only count matching records, do not print them.'
+        '--count', action='store_true', help='Only count matching records (mutually exclusive with other inspection modes).'
     )
     parser.add_argument(
         '--config', help='Load configuration from JSON file.'
@@ -95,10 +115,10 @@ def parse_args():
         '--progress', action='store_true', help='Show progress bar for large files (requires tqdm).'
     )
     parser.add_argument(
-        '--preview', type=int, default=0, help='Show only the first N matching rows (0 = no limit).'
+        '--preview', type=int, default=0, help='Show first N matching rows only (0=unlimited).'
     )
     parser.add_argument(
-        '--sample', type=int, default=0, help='Show the first N rows as sample (0 = no sample).'
+        '--sample', type=int, default=0, help='Show first N rows as sample (inspection mode).'
     )
     parser.add_argument(
         '--verbose', '-v', action='store_true', help='Enable verbose logging.'
@@ -107,26 +127,38 @@ def parse_args():
         '--debug', action='store_true', help='Enable debug logging.'
     )
     parser.add_argument(
-        '--describe', action='store_true', help='Show file schema (mutually exclusive with search).'
+        '--describe', action='store_true', help='Show file schema and sample data (inspection mode).'
     )
+    
     return parser.parse_args()
 
 
-def validate_args(args):
-    """Validate argument combinations and constraints."""
-    inspection_modes = [args.count, args.describe, args.sample > 0, args.preview > 0]
-    inspection_count = sum(inspection_modes)
+def validate_args(args: argparse.Namespace) -> argparse.Namespace:
+    """Validate argument combinations and constraints.
+    
+    Args:
+        args: Parsed arguments to validate.
+        
+    Returns:
+        Validated arguments namespace.
+        
+    Raises:
+        DataGrepError: When invalid argument combinations are detected.
+    """
+    inspection_modes: List[bool] = [args.count, args.describe, args.sample > 0, args.preview > 0]
+    inspection_count: int = sum(inspection_modes)
     
     if inspection_count > 1:
         raise DataGrepError('Cannot combine --count, --describe, --sample, and --preview. Use only one.')
     
-    in_inspection_mode = inspection_count > 0
+    in_inspection_mode: bool = inspection_count > 0
     
     if in_inspection_mode and args.value is not None:
         raise DataGrepError('Inspection modes (--count, --describe, --sample, --preview) cannot be used with search value.')
     
-    if in_inspection_mode and (args.where or args.sort):
-        raise DataGrepError('Search filters (--where, --sort) only work with a search value.')
+    # Check that --where and --sort require a search value
+    if (args.where or args.sort) and not args.value:
+        raise DataGrepError('Search filters (--where, --sort) require a search value.')
     
     if args.value and not args.columns:
         args.columns = '*'
@@ -134,18 +166,42 @@ def validate_args(args):
     return args
 
 
-def load_config(config_file):
+def load_config(config_file: str) -> Dict[str, Any]:
+    """Load configuration from JSON file.
+    
+    Args:
+        config_file: Path to configuration JSON file.
+        
+    Returns:
+        Dictionary of configuration options.
+        
+    Raises:
+        FileNotFoundError: If config file doesn't exist.
+        json.JSONDecodeError: If config file is invalid JSON.
+    """
     with open(config_file, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 
-def parse_where_condition(condition):
-    def parse_single(cond):
-        parts = cond.strip().split()
+def parse_where_condition(condition: str) -> Callable[[Dict[str, Any]], bool]:
+    """Parse WHERE condition with AND/OR logic.
+    
+    Args:
+        condition: Filter condition string like "name == John" or "age > 18 and city contains NYC".
+        
+    Returns:
+        Function that evaluates condition on a row dictionary.
+        
+    Raises:
+        DataGrepError: If condition format is invalid.
+    """
+    def parse_single(cond: str) -> Callable[[Dict[str, Any]], bool]:
+        """Parse single condition."""
+        parts: List[str] = cond.strip().split()
         if len(parts) != 3:
             raise DataGrepError(f'Condition "{cond}" must be "column op value"')
         col, op, val = parts
-        ops = {
+        ops: Dict[str, Callable[[Any, Any], bool]] = {
             '==': operator.eq,
             '!=': operator.ne,
             '>': operator.gt,
@@ -161,8 +217,8 @@ def parse_where_condition(condition):
         return lambda row: ops[op](str(row.get(col, '')), val)
 
     if ' and ' in condition:
-        conditions = condition.split(' and ')
-        funcs = [parse_single(c) for c in conditions]
+        conditions: List[str] = condition.split(' and ')
+        funcs: List[Callable[[Dict[str, Any]], bool]] = [parse_single(c) for c in conditions]
         return lambda row: all(f(row) for f in funcs)
     elif ' or ' in condition:
         conditions = condition.split(' or ')
@@ -172,15 +228,26 @@ def parse_where_condition(condition):
         return parse_single(condition)
 
 
-def load_excel_records(file):
+def load_excel_records(file: str) -> Tuple[List[Dict[str, Any]], List[str]]:
+    """Load records from Excel XLSX file.
+    
+    Args:
+        file: Path to Excel file.
+        
+    Returns:
+        Tuple of (records list, field names list).
+        
+    Raises:
+        ImportError: If openpyxl is not installed.
+    """
     if not OPENPYXL_AVAILABLE:
         raise ImportError('openpyxl is required for Excel support. Install with: pip install openpyxl')
     wb = openpyxl.load_workbook(file)
     ws = wb.active
-    headers = [str(cell.value) for cell in ws[1]]
-    records = []
+    headers: List[str] = [str(cell.value) for cell in ws[1]]
+    records: List[Dict[str, Any]] = []
     for row in ws.iter_rows(min_row=2):
-        record = {}
+        record: Dict[str, Any] = {}
         for i, cell in enumerate(row):
             if i < len(headers):
                 record[headers[i]] = cell.value
@@ -188,13 +255,35 @@ def load_excel_records(file):
     return records, headers
 
 
-def open_input_file(path, encoding):
+def open_input_file(path: str, encoding: str) -> Union[TextIO, io.StringIO]:
+    """Open input file with proper encoding handling.
+    
+    Args:
+        path: File path or '-' for stdin.
+        encoding: Text encoding to use.
+        
+    Returns:
+        File object or stdin.
+    """
     if path == '-':
         return sys.stdin
     return open(path, 'r', encoding=encoding, newline='')
 
 
-def build_matcher(value, mode, ignore_case):
+def build_matcher(value: str, mode: str, ignore_case: bool) -> Callable[[str], bool]:
+    """Build a matcher function based on search mode.
+    
+    Args:
+        value: Search string or pattern.
+        mode: Search mode (contains, exact, startswith, endswith, regex).
+        ignore_case: Whether to ignore case.
+        
+    Returns:
+        Function that tests if text matches criteria.
+        
+    Raises:
+        ValueError: If mode is unknown.
+    """
     if ignore_case:
         value = value.lower()
 
@@ -207,23 +296,34 @@ def build_matcher(value, mode, ignore_case):
     if mode == 'endswith':
         return lambda text: text.lower().endswith(value) if ignore_case else text.endswith(value)
     if mode == 'regex':
-        flags = re.IGNORECASE if ignore_case else 0
-        pattern = re.compile(value, flags)
+        flags: int = re.IGNORECASE if ignore_case else 0
+        pattern: re.Pattern[str] = re.compile(value, flags)
         return lambda text: bool(pattern.search(text))
     raise ValueError(f'Unknown mode: {mode}')
 
 
-def load_json_records(file):
+def load_json_records(file: Union[TextIO, io.StringIO]) -> List[Dict[str, Any]]:
+    """Load records from JSON file (array or newline-delimited).
+    
+    Args:
+        file: File object containing JSON data.
+        
+    Returns:
+        List of record dictionaries.
+        
+    Raises:
+        ValueError: If JSON format is invalid.
+    """
     try:
-        data = json.load(file)
+        data: Any = json.load(file)
     except json.JSONDecodeError:
         try:
             file.seek(0)
         except (OSError, AttributeError):
-            text = file.read()
+            text: str = file.read()
             file = io.StringIO(text)
             file.seek(0)
-        records = []
+        records: List[Dict[str, Any]] = []
         for idx, line in enumerate(file, 1):
             line = line.strip()
             if not line:
@@ -245,31 +345,42 @@ def load_json_records(file):
     return data
 
 
-def format_table(rows, fieldnames, color=False):
+def format_table(rows: List[Dict[str, Any]], fieldnames: List[str], color: bool = False) -> str:
+    """Format records as aligned ASCII table.
+    
+    Args:
+        rows: List of record dictionaries.
+        fieldnames: Column names to include.
+        color: Whether to use ANSI color codes.
+        
+    Returns:
+        Formatted table string.
+    """
     if not rows:
         return ''
 
-    widths = {field: len(field) for field in fieldnames}
+    widths: Dict[str, int] = {field: len(field) for field in fieldnames}
     for row in rows:
         for field in fieldnames:
             widths[field] = max(widths[field], len(str(row.get(field, ''))))
 
-    header_parts = [field.ljust(widths[field]) for field in fieldnames]
+    header_parts: List[str] = [field.ljust(widths[field]) for field in fieldnames]
     if color and COLORAMA_AVAILABLE:
-        header = Fore.CYAN + ' | '.join(header_parts) + Style.RESET_ALL
-        separator = Fore.YELLOW + '-+-'.join('-' * widths[field] for field in fieldnames) + Style.RESET_ALL
+        header: str = Fore.CYAN + ' | '.join(header_parts) + Style.RESET_ALL
+        separator: str = Fore.YELLOW + '-+-'.join('-' * widths[field] for field in fieldnames) + Style.RESET_ALL
     else:
         header = ' | '.join(header_parts)
         separator = '-+-'.join('-' * widths[field] for field in fieldnames)
-    lines = [header, separator]
+    lines: List[str] = [header, separator]
     for row in rows:
         line_parts = [str(row.get(field, '')).ljust(widths[field]) for field in fieldnames]
         lines.append(' | '.join(line_parts))
     return '\n'.join(lines)
 
 
-def main():
-    args = parse_args()
+def main() -> None:
+    """Main entry point for datagrep CLI."""
+    args: argparse.Namespace = parse_args()
     args = validate_args(args)
 
     if args.debug:
@@ -288,7 +399,7 @@ def main():
 
     try:
         with open_input_file(args.input_file, args.encoding) as csvfile:
-            input_format = args.input_format
+            input_format: str = args.input_format
             if input_format == 'auto':
                 if args.input_file != '-' and args.input_file.lower().endswith('.json'):
                     input_format = 'json'
@@ -297,7 +408,7 @@ def main():
                 elif args.input_file != '-' and args.input_file.lower().endswith('.csv'):
                     input_format = 'csv'
                 elif args.input_file == '-':
-                    text = csvfile.read()
+                    text: str = csvfile.read()
                     csvfile = io.StringIO(text)
                     input_format = 'json' if text.lstrip().startswith(('{', '[')) else 'csv'
                 else:
@@ -307,8 +418,8 @@ def main():
                 reader = csv.DictReader(csvfile, delimiter=args.delimiter)
                 if not reader.fieldnames:
                     raise ValueError('CSV input has no headers.')
-                available_columns = reader.fieldnames
-                records = list(reader)
+                available_columns: List[str] = reader.fieldnames
+                records: List[Dict[str, Any]] = list(reader)
             elif input_format == 'xlsx':
                 records, available_columns = load_excel_records(args.input_file)
             else:
@@ -321,22 +432,22 @@ def main():
                             seen.add(key)
                             available_columns.append(key)
 
-            columns = [col.strip() for col in args.columns.split(',') if col.strip()] if args.columns else list(available_columns)
-            selected_columns = [col.strip() for col in args.select.split(',') if col.strip()]
+            columns: List[str] = [col.strip() for col in args.columns.split(',') if col.strip()] if args.columns else list(available_columns)
+            selected_columns: List[str] = [col.strip() for col in args.select.split(',') if col.strip()]
 
             logging.info("Loaded %d records with fields: %s", len(records), ', '.join(available_columns))
 
             if args.describe:
                 print("Fields:")
                 for col in available_columns:
-                    samples = [str(row.get(col, '')) for row in records[:5]]
+                    samples: List[str] = [str(row.get(col, '')) for row in records[:5]]
                     print(f"  {col}: {', '.join(samples)}")
                 return
             elif args.count and not args.value:
                 print(len(records))
                 return
             elif args.sample:
-                sample_rows = records[:args.sample]
+                sample_rows: List[Dict[str, Any]] = records[:args.sample]
                 print(format_table(sample_rows, available_columns, args.color))
                 return
             elif args.preview and not args.value:
@@ -366,7 +477,7 @@ def main():
             # Apply where filter
             if args.where:
                 logging.debug("Applying where filter: %s", args.where)
-                where_func = parse_where_condition(args.where)
+                where_func: Callable[[Dict[str, Any]], bool] = parse_where_condition(args.where)
                 records = [r for r in records if where_func(r)]
                 logging.info("After where filter: %d records", len(records))
 
@@ -374,7 +485,7 @@ def main():
             if args.sort:
                 logging.debug("Applying sort: %s", args.sort)
                 sort_col, sort_order = args.sort.split(':')
-                reverse = sort_order.lower() == 'desc'
+                reverse: bool = sort_order.lower() == 'desc'
                 records.sort(key=lambda r: str(r.get(sort_col, '')), reverse=reverse)
                 logging.info("Records sorted by %s %s", sort_col, sort_order)
 
@@ -397,13 +508,15 @@ def main():
                     f"Available fields: {', '.join(available_columns)}"
                 )
 
-            matcher = build_matcher(args.value, args.mode, args.ignore_case)
+            matcher: Callable[[str], bool] = build_matcher(args.value, args.mode, args.ignore_case)
             logging.debug("Searching for '%s' in columns: %s", args.value, ', '.join(columns))
 
             if args.count:
                 # Count only
-                count = 0
-                iterator = tqdm.tqdm(records) if args.progress and TQDM_AVAILABLE and len(records) > 1000 else records
+                count: int = 0
+                iterator: Union[Iterator[Dict[str, Any]], List[Dict[str, Any]]] = (
+                    tqdm.tqdm(records) if args.progress and TQDM_AVAILABLE and len(records) > 1000 else records
+                )
                 for row in iterator:
                     if any(matcher(str(row.get(col, ''))) for col in columns):
                         count += 1
@@ -413,7 +526,7 @@ def main():
                 logging.info("Found %d matching records", count)
                 return
 
-            matches = []
+            matches: List[Dict[str, Any]] = []
             count = 0
             iterator = tqdm.tqdm(records) if args.progress and TQDM_AVAILABLE and len(records) > 1000 else records
             for row in iterator:
@@ -429,7 +542,7 @@ def main():
 
             logging.info("Found %d matching records", len(matches))
 
-            output_file = open(args.output, 'w', encoding=args.encoding, newline='') if args.output else sys.stdout
+            output_file: Union[TextIO, io.TextIOBase] = open(args.output, 'w', encoding=args.encoding, newline='') if args.output else sys.stdout
             try:
                 if args.output_format == 'csv':
                     writer = csv.DictWriter(output_file, fieldnames=selected_columns, delimiter=args.delimiter)
