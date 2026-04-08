@@ -15,6 +15,8 @@
 
 A powerful, production-ready Python CLI tool to search and filter CSV, JSON, or Excel records with flexible matching modes, advanced filtering, sorting, and multiple output formats.
 
+**⚠️ Current Version (v1.0):** Optimized for files up to **1GB**. See [PERFORMANCE.md](PERFORMANCE.md) for large file handling strategies and Phase 2 optimization roadmap.
+
 ## ⭐ Features
 
 - **Multi-Format Support**: CSV, JSON, Excel (XLSX), and stdin
@@ -24,7 +26,7 @@ A powerful, production-ready Python CLI tool to search and filter CSV, JSON, or 
 - **Unicode Support**: Full support for Arabic, Chinese, and other Unicode content
 - **Multiple Output Formats**: CSV, JSON, ASCII table, raw dictionaries
 - **Intelligent Modes**: Count-only, schema inspection, sampling
-- **Performance Features**: Progress bars for large files, streaming where possible
+- **Performance Optimized**: Works best with files < 1GB (see [PERFORMANCE.md](PERFORMANCE.md) for larger files)
 - **Developer Friendly**: Complete type hints, comprehensive error messages, detailed logging
 - **Flexible Deployment**: Traditional pip install, Docker support, shell completions
 - **Configuration Files**: JSON-based defaults for repeatable operations
@@ -575,6 +577,9 @@ datagrep data.csv name value --encoding latin-1
 ```bash
 # Use progress bar and limit results
 datagrep large_file.csv field value --progress --limit 1000
+
+# See PERFORMANCE.md for optimization strategies
+# Large file support planned for Phase 2
 ```
 
 **Column not found**
@@ -591,6 +596,7 @@ See [INSTALL.md](INSTALL.md) for more troubleshooting steps.
 ## 📖 Documentation
 
 - [Installation Guide](INSTALL.md) - Detailed install instructions
+- [Performance & Scalability](PERFORMANCE.md) - File size limits, optimization roadmap
 - [Development Guide](DEVELOPMENT.md) - For contributors
 - [Contributing](CONTRIBUTING.md) - How to contribute
 - [Code Review](CODE_REVIEW.md) - Architecture and improvements
@@ -615,12 +621,23 @@ Built with Python 3.7+ and influenced by powerful Unix tools like `grep`, `sed`,
 
 ## 🔮 Future Enhancements
 
+**Phase 2 (v1.1) - Performance Optimization:**
+- [ ] Streaming mode for files > 1GB (lazy loading)
+- [ ] Parallel processing (`--parallel` flag) - 4-8x speedup
+- [ ] Chunked batch processing for memory efficiency
+- [ ] Statistics & monitoring (`--stats` flag)
+- [ ] Memory-mapped file support
+
+**Phase 3+ (v1.2+):**
+- [ ] Database support (SQLite, PostgreSQL, MySQL)
+- [ ] Indexed searching for repeated queries
+- [ ] Distributed processing (Dask/Ray)
 - [ ] Web UI for interactive searching
-- [ ] Database support (PostgreSQL, MySQL)
-- [ ] Parallel processing for large files
 - [ ] Column statistics and aggregations
 - [ ] Data validation profiles
 - [ ] Export to additional formats (XML, Parquet, HDF5)
+
+**See [PERFORMANCE.md](PERFORMANCE.md) for detailed optimization roadmap.**
 ```
 
 #### JSON output with progress

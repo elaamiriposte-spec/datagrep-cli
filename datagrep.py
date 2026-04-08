@@ -270,6 +270,35 @@ def open_input_file(path: str, encoding: str) -> Union[TextIO, io.StringIO]:
     return open(path, 'r', encoding=encoding, newline='')
 
 
+def check_file_size(path: str) -> None:
+    """Check file size and warn if it exceeds recommended limits.
+    
+    Args:
+        path: File path to check.
+    """
+    if path == '-':
+        return  # Can't check stdin
+    
+    try:
+        file_size_mb: float = os.path.getsize(path) / (1024 * 1024)
+        
+        if file_size_mb > 1000:  # > 1GB
+            logging.warning(
+                "File size %.1fMB exceeds recommended limit (1GB). "
+                "Performance may degrade or cause memory issues. "
+                "See PERFORMANCE.md for optimization strategies.",
+                file_size_mb
+            )
+        elif file_size_mb > 500:  # > 500MB
+            logging.info(
+                "Processing %.1fMB file. Consider using --limit or --where "
+                "filters for better performance.",
+                file_size_mb
+            )
+    except (OSError, IOError):
+        pass  # File doesn't exist yet or can't access
+
+
 def build_matcher(value: str, mode: str, ignore_case: bool) -> Callable[[str], bool]:
     """Build a matcher function based on search mode.
     
@@ -396,7 +425,8 @@ def main() -> None:
         for key, value in config.items():
             if hasattr(args, key):
                 setattr(args, key, value)
-
+    # Check file size before loading
+    check_file_size(args.input_file)
     try:
         with open_input_file(args.input_file, args.encoding) as csvfile:
             input_format: str = args.input_format
