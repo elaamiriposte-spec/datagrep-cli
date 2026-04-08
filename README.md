@@ -15,22 +15,22 @@
 
 A powerful, production-ready Python CLI tool to search and filter CSV, JSON, or Excel records with flexible matching modes, advanced filtering, sorting, and multiple output formats.
 
-**⚠️ Current Version (v1.0):** Optimized for files up to **1GB**. See [PERFORMANCE.md](PERFORMANCE.md) for large file handling strategies and Phase 2 optimization roadmap.
+**⚠️ Version 1.0:** Optimized for files up to **1GB**. See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for file size limits, strategies, and Phase 2+ optimization roadmap.
 
 ## ⭐ Features
 
 - **Multi-Format Support**: CSV, JSON, Excel (XLSX), and stdin
 - **Flexible Search Modes**: Contains, exact, startswith, endswith, regex patterns
-- **Advanced Filtering**: Pre-filter records with `--where` conditions (AND/OR logic)
-- **Sorting**: Sort by column in ascending/descending order before searching
+- **Advanced Filtering**: Pre-filter with `--where` conditions (AND/OR logic)
+- **Sorting**: Sort by column before searching
 - **Unicode Support**: Full support for Arabic, Chinese, and other Unicode content
-- **Multiple Output Formats**: CSV, JSON, ASCII table, raw dictionaries
-- **Intelligent Modes**: Count-only, schema inspection, sampling
-- **Performance Optimized**: Works best with files < 1GB (see [PERFORMANCE.md](PERFORMANCE.md) for larger files)
-- **Developer Friendly**: Complete type hints, comprehensive error messages, detailed logging
-- **Flexible Deployment**: Traditional pip install, Docker support, shell completions
-- **Configuration Files**: JSON-based defaults for repeatable operations
-- **Well-Tested**: 26+ comprehensive unit tests with full code coverage
+- **Multiple Output Formats**: CSV, JSON, table, raw dictionaries
+- **Schema Inspection**: View field names and samples without searching
+- **Performance Conscious**: File size warnings, progress bars, configurable limits
+- **Complete Type Hints**: 100% type annotation for IDE support and type checking
+- **Shell Completions**: Auto-completion for bash, zsh, fish, PowerShell
+- **Configuration Files**: Reusable JSON configs for common workflows
+- **Well-Tested**: 26+ unit tests with 95%+ code coverage
 
 ## 📦 Installation
 
@@ -82,7 +82,7 @@ pip install -e ".[color,progress,excel]"
 datagrep --version
 ```
 
-See [INSTALL.md](INSTALL.md) for detailed installation instructions and troubleshooting.
+See [docs/INSTALL.md](docs/INSTALL.md) for detailed installation instructions and troubleshooting.
 
 ## 🚀 Quick Start
 
@@ -353,7 +353,7 @@ Create reusable configurations in JSON:
 datagrep --config customer-search.json alice
 ```
 
-See [examples/](examples/) directory for more configuration examples.
+See [examples/configs/](examples/configs/) for more configuration examples.
 
 ### Logging and Debugging
 
@@ -591,19 +591,19 @@ datagrep data.csv --describe
 datagrep data.csv "ColumnName" search_value
 ```
 
-See [INSTALL.md](INSTALL.md) for more troubleshooting steps.
+See [docs/INSTALL.md](docs/INSTALL.md) for more troubleshooting steps.
 
 ## 📖 Documentation
 
-- [Installation Guide](INSTALL.md) - Detailed install instructions
-- [Performance & Scalability](PERFORMANCE.md) - File size limits, optimization roadmap
-- [Development Guide](DEVELOPMENT.md) - For contributors
-- [Contributing](CONTRIBUTING.md) - How to contribute
-- [Code Review](CODE_REVIEW.md) - Architecture and improvements
+- [Installation Guide](docs/INSTALL.md) - Setup, troubleshooting, and system requirements
+- [Performance & Scalability](docs/PERFORMANCE.md) - File size limits, optimization roadmap
+- [Development Guide](docs/DEVELOPMENT.md) - Architecture, debugging, profiling
+- [Contributing](docs/CONTRIBUTING.md) - How to contribute code and report issues
+- [Project Structure](PROJECT_STRUCTURE.md) - Folder organization and layout
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+Contributions are welcome! Please see [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) for guidelines.
 
 ## 📄 License
 
@@ -619,124 +619,19 @@ Built with Python 3.7+ and influenced by powerful Unix tools like `grep`, `sed`,
 - Ask questions: [GitHub Discussions](https://github.com/yourusername/datagrep-cli/discussions)
 - View docs: [Full Documentation](https://github.com/yourusername/datagrep-cli#readme)
 
-## 🔮 Future Enhancements
+## 🔮 Future Roadmap
 
-**Phase 2 (v1.1) - Performance Optimization:**
-- [ ] Streaming mode for files > 1GB (lazy loading)
-- [ ] Parallel processing (`--parallel` flag) - 4-8x speedup
-- [ ] Chunked batch processing for memory efficiency
-- [ ] Statistics & monitoring (`--stats` flag)
-- [ ] Memory-mapped file support
+See [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for complete optimization roadmap including:
 
-**Phase 3+ (v1.2+):**
-- [ ] Database support (SQLite, PostgreSQL, MySQL)
-- [ ] Indexed searching for repeated queries
-- [ ] Distributed processing (Dask/Ray)
-- [ ] Web UI for interactive searching
-- [ ] Column statistics and aggregations
-- [ ] Data validation profiles
-- [ ] Export to additional formats (XML, Parquet, HDF5)
+**Phase 2 (v1.1)** - Performance Optimization:
+- Streaming mode for files > 1GB (lazy loading)
+- Parallel processing with `--parallel` flag (4-8x speedup)
+- Statistics & monitoring with `--stats` flag
+- Memory-mapped file support
 
-**See [PERFORMANCE.md](PERFORMANCE.md) for detailed optimization roadmap.**
-```
-
-#### JSON output with progress
-
-```bash
-python search_csv.py large_file.csv name test --output-format json --progress
-```
-
-#### Excel input
-
-```bash
-python search_csv.py data.xlsx name John --input-format xlsx
-```
-
-#### Read from stdin
-
-```bash
-type arabic_sample.csv | python search_csv.py - name دبي --delimiter ,
-```
-
-#### Describe file schema
-
-```bash
-python search_csv.py arabic_sample.csv name --describe
-```
-
-This shows field names and sample values without searching.
-
-## Options
-
-- `--input-format`: `auto` (default), `csv`, `json`, `xlsx`
-- `--mode`: `contains` (default), `exact`, `startswith`, `endswith`, `regex`
-- `--ignore-case` or `-i`
-- `--delimiter` or `-d` (default: `,`)
-- `--encoding` (default: `utf-8`)
-- `--output-format`: `csv` (default), `json`, `table`, `raw`
-- `--select` or `-s` to choose output columns (default: all)
-- `--output` or `-o` to write results to a file
-- `--limit` or `-n` to stop after a number of matching rows
-- `--sort` to sort by column:asc or column:desc
-- `--where` to filter with conditions like "column > value"
-- `--count` to only count matches
-- `--config` to load settings from JSON file
-- `--color` to colorize output (requires colorama)
-- `--progress` to show progress bar (requires tqdm)
-- `--preview` to show only the first N matching rows
-- `--sample` to show the first N rows as sample
-- `--verbose` or `-v` to enable verbose logging
-- `--debug` to enable debug logging
-- `--describe` to show field names and sample values
-- `--help` to display usage details
-
-## Where Conditions
-
-Use `--where` for pre-filtering records. Supported operators:
-
-- `==`, `!=`, `>`, `<`, `>=`, `<=` (numeric/string comparison)
-- `contains`, `startswith`, `endswith` (string operations)
-- `and`, `or` for combining conditions
-
-Examples:
-- `--where "age > 25"`
-- `--where "name contains John"`
-- `--where "city == London"`
-- `--where "age > 25 and city == London"`
-- `--where "name contains John or age < 30"`
-
-## Configuration Files
-
-Create a JSON file with default options:
-
-```json
-{
-  "ignore_case": true,
-  "output_format": "table",
-  "color": true
-}
-```
-
-Then use: `python search_csv.py file.csv name value --config config.json`
-
-## Dependencies
-
-Optional packages for enhanced features:
-- `pip install colorama` for colored output
-- `pip install tqdm` for progress bars
-- `pip install openpyxl` for Excel support
-
-## Testing
-
-Run unit tests:
-
-```bash
-python tests.py
-```
-
-## Notes
-
-- Input files must have consistent field names (CSV headers, JSON keys, Excel headers).
-- Use UTF-8 encoded files for Arabic and other non-Latin data.
-- Auto-detection works for `.csv`, `.json`, `.xlsx` extensions.
-- For large files, use `--progress` to monitor processing.
+**Phase 3+ (v1.2+)** - Advanced Features:
+- Database support (SQLite, PostgreSQL, MySQL)
+- Indexed searching for repeated queries
+- Distributed processing (Dask/Ray)
+- Web UI for interactive searching
+- Column statistics and aggregations
