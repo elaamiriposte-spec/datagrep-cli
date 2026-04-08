@@ -468,10 +468,9 @@ def main() -> None:
             logging.info("Loaded %d records with fields: %s", len(records), ', '.join(available_columns))
 
             if args.describe:
-                print("Fields:")
+                print("Schema:")
                 for col in available_columns:
-                    samples: List[str] = [str(row.get(col, '')) for row in records[:5]]
-                    print(f"  {col}: {', '.join(samples)}")
+                    print(f"  - {col}")
                 return
             elif args.count and not args.value:
                 print(len(records))
@@ -487,21 +486,13 @@ def main() -> None:
 
             if not args.value:
                 # Show schema and sample when no search value provided
-                print("Fields:")
+                print("Schema:")
                 for col in available_columns:
-                    samples = [str(row.get(col, '')) for row in records[:5]]
-                    print(f"  {col}: {', '.join(samples)}")
-                print("\nSample rows:")
+                    print(f"  - {col}")
+                print("\nSample rows (first 10):")
                 sample_rows = records[:10]
                 if sample_rows:
                     print(format_table(sample_rows, available_columns, args.color))
-                return
-
-            # Apply where filter
-                print("Fields:")
-                for col in available_columns:
-                    samples = [str(row.get(col, '')) for row in records[:5]]
-                    print(f"  {col}: {', '.join(samples)}")
                 return
 
             # Apply where filter
