@@ -19,7 +19,8 @@ class TestArgumentValidation(unittest.TestCase):
         args = type('Args', (), {
             'count': True, 'describe': False, 'sample': 0, 'preview': 0,
             'value': None, 'where': None, 'sort': None,
-            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False
+            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
+            'empty': False, 'not_empty': False
         })()
         
         args.count = False
@@ -36,7 +37,8 @@ class TestArgumentValidation(unittest.TestCase):
         args = type('Args', (), {
             'count': True, 'describe': False, 'sample': 0, 'preview': 0,
             'value': 'test', 'where': None, 'sort': None,
-            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False
+            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
+            'empty': False, 'not_empty': False
         })()
         
         with self.assertRaises(DataGrepError):
@@ -47,7 +49,8 @@ class TestArgumentValidation(unittest.TestCase):
         args = type('Args', (), {
             'count': False, 'describe': False, 'sample': 0, 'preview': 0,
             'value': None, 'where': 'age > 25', 'sort': None,
-            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False
+            'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
+            'empty': False, 'not_empty': False
         })()
         
         with self.assertRaises(DataGrepError):

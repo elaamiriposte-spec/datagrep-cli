@@ -103,6 +103,12 @@ def parse_args() -> argparse.Namespace:
         '--where', help='Filter records with condition: "column op value" (or/and supported).'
     )
     parser.add_argument(
+        '--empty', action='store_true', help='Show only rows where specified column is empty.'
+    )
+    parser.add_argument(
+        '--not-empty', action='store_true', help='Show only rows where specified column has a value.'
+    )
+    parser.add_argument(
         '--count', action='store_true', help='Only count matching records (mutually exclusive with other inspection modes).'
     )
     parser.add_argument(
@@ -155,6 +161,19 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
     
     if in_inspection_mode and args.value is not None:
         raise DataGrepError('Inspection modes (--count, --describe, --sample, --preview) cannot be used with search value.')
+    
+    # Validate --empty and --not-empty
+    if args.empty and args.not_empty:
+        raise DataGrepError('Cannot use --empty and --not-empty together. Use only one.')
+    
+    if (args.empty or args.not_empty) and args.value is not None:
+        raise DataGrepError('--empty and --not-empty filters do not take a search value. Remove the search value.')
+    
+    if (args.empty or args.not_empty) and not args.columns:
+        raise DataGrepError('--empty and --not-empty require a column name to filter.')
+    
+    if (args.empty or args.not_empty) and (args.where or args.sort):
+        raise DataGrepError('Cannot combine --empty/--not-empty with --where or --sort filters.')
     
     # Check that --where and --sort require a search value
     if (args.where or args.sort) and not args.value:
@@ -485,7 +504,30 @@ def main() -> None:
                 return
 
             if not args.value:
-                # Show schema and sample when no search value provided
+                # Handle --empty and --not-empty filters (no search value needed)
+                if args.empty or args.not_empty:
+                    filter_columns: List[str] = [col.strip() for col in args.columns.split(',') if col.strip()]
+                    
+                    if args.empty:
+                        logging.debug("Filtering for empty values in columns: %s", ', '.join(filter_columns))
+                        records = [r for r in records if any(str(r.get(col, '')).strip() == '' for col in filter_columns)]
+                        logging.info("After empty filter: %d records", len(records))
+                    else:  # --not-empty
+                        logging.debug("Filtering for non-empty values in columns: %s", ', '.join(filter_columns))
+                        records = [r for r in records if any(str(r.get(col, '')).strip() != '' for col in filter_columns)]
+                        logging.info("After not-empty filter: %d records", len(records))
+                    
+                    if not records:
+                        print("No records match the filter.")
+                        return
+                    
+                    # Show filtered results
+                    if selected_columns == ['*']:
+                        selected_columns = available_columns
+                    print(format_table(records, selected_columns, args.color))
+                    return
+                
+                # Show schema and sample when no search value provided and no --empty/--not-empty
                 print("Schema:")
                 for col in available_columns:
                     print(f"  - {col}")

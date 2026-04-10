@@ -287,6 +287,21 @@ datagrep data.csv name alice --preview 10
 datagrep data.csv name alice --count
 ```
 
+### Filtering by Empty or Not-Empty Values
+
+Filter rows based on whether a column is empty or has a value:
+
+```bash
+# Find all rows with empty phone field
+datagrep data.csv phone --empty
+
+# Find all rows with non-empty email field
+datagrep data.csv email --not-empty
+
+# Works with multiple columns
+datagrep data.csv phone,email --empty
+```
+
 ### Working With Different Formats
 
 **Auto-detection** (default):
@@ -448,6 +463,8 @@ datagrep data.xlsx field value --output-format json --output data.json
 | `--limit` | `-n` | INT | 0 | Max results (0=unlimited) |
 | `--sort` | | STR | | Sort: column:asc or column:desc |
 | `--where` | | STR | | Filter: "column op value" |
+| `--empty` | | BOOL | False | Show rows where column is empty |
+| `--not-empty` | | BOOL | False | Show rows where column has value |
 | `--count` | | BOOL | False | Count only, no output |
 | `--config` | | PATH | | Load config from JSON file |
 | `--color` | | BOOL | False | Colorize output |
