@@ -476,6 +476,39 @@ def format_table(rows: List[Dict[str, Any]], fieldnames: List[str], color: bool 
     return '\n'.join(lines)
 
 
+def _should_load_eagerly(args: argparse.Namespace) -> bool:
+    """Determine if records should be loaded eagerly (all at once) vs lazily.
+    
+    Eager loading is required for:
+    - Inspection modes (--describe, --count without value, --sample, --preview without value)
+    - Filtering (--where, --sort, --empty, --not-empty)
+    - When no limit is specified
+    
+    Args:
+        args: Parsed command-line arguments.
+        
+    Returns:
+        True if should load all records eagerly, False for lazy loading.
+    """
+    inspection_modes: List[bool] = [args.describe, args.sample > 0, args.preview > 0]
+    has_inspection = any(inspection_modes)
+    has_filters = bool(args.where or args.sort or args.empty or args.not_empty)
+    has_no_value = args.value is None
+    
+    # Need eager loading if:
+    if has_no_value:  # Inspection mode without value
+        return True
+    if has_inspection:  # Any inspection mode
+        return True
+    if has_filters:  # Any filtering
+        return True
+    if not args.limit:  # No limit specified, need all for full output
+        return True
+    
+    # Can use lazy loading: search with --limit, no filters, no inspection
+    return False
+
+
 def main() -> None:
     """Main entry point for datagrep CLI."""
     args: argparse.Namespace = parse_args()
@@ -518,11 +551,25 @@ def main() -> None:
                 if not reader.fieldnames:
                     raise ValueError('CSV input has no headers.')
                 available_columns: List[str] = reader.fieldnames
-                records: List[Dict[str, Any]] = list(reader)
+                
+                # Decide whether to load eagerly or lazily
+                use_lazy: bool = not _should_load_eagerly(args)
+                if use_lazy:
+                    # Lazy loading: keep as iterator, don't load all records
+                    records: Union[List[Dict[str, Any]], Iterator[Dict[str, Any]]] = reader
+                    logging.debug("Using lazy loading mode for CSV search")
+                else:
+                    # Eager loading: load all records into memory
+                    records = list(reader)
+                    logging.debug("Using eager loading mode for CSV (loaded %d records)", len(records))
             elif input_format == 'xlsx':
+                # Excel always loads eagerly (openpyxl limitation)
                 records, available_columns = load_excel_records(args.input_file)
+                logging.debug("Loaded %d records from Excel file", len(records))
             else:
+                # JSON always loads eagerly
                 records = load_json_records(csvfile)
+                logging.debug("Loaded %d records from JSON file", len(records))
                 seen = set()
                 available_columns = []
                 for row in records:
@@ -534,7 +581,15 @@ def main() -> None:
             columns: List[str] = [col.strip() for col in args.columns.split(',') if col.strip()] if args.columns else list(available_columns)
             selected_columns: List[str] = [col.strip() for col in args.select.split(',') if col.strip()]
 
-            logging.info("Loaded %d records with fields: %s", len(records), ', '.join(available_columns))
+            # For lazy loading, we can't get len() until we consume the iterator
+            # This is fine because lazy loading only applies to search with --limit
+            if not isinstance(records, list):
+                # Still an iterator (lazy loading mode)
+                records_count: Optional[int] = None
+                logging.debug("Records in lazy loading mode - count unavailable until search")
+            else:
+                records_count = len(records)
+                logging.info("Loaded %d records with fields: %s", records_count, ', '.join(available_columns))
 
             if args.describe:
                 print("Schema:")
@@ -542,10 +597,20 @@ def main() -> None:
                     print(f"  - {col}")
                 return
             elif args.count and not args.value:
-                print(len(records))
+                if isinstance(records, list):
+                    print(len(records))
+                else:
+                    # This shouldn't happen with eager loading check, but fallback to counting
+                    records = list(records)
+                    print(len(records))
                 return
             elif args.sample:
-                sample_rows: List[Dict[str, Any]] = records[:args.sample]
+                if isinstance(records, list):
+                    sample_rows: List[Dict[str, Any]] = records[:args.sample]
+                else:
+                    # Convert to list and take sample
+                    records = list(records)
+                    sample_rows = records[:args.sample]
                 print(format_table(sample_rows, available_columns, args.color))
                 return
             elif args.preview and not args.value:
