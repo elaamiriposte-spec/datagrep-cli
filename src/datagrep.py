@@ -214,20 +214,80 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
     
     # Validate --empty and --not-empty
     if args.empty and args.not_empty:
-        raise DataGrepError('Cannot use --empty and --not-empty together. Use only one.')
+        raise DataGrepError(
+            'Error: Cannot use --empty and --not-empty together.\n'
+            '  Use only one filter at a time.\n'
+            '  Examples:\n'
+            '    datagrep file.csv phone --empty\n'
+            '    datagrep file.csv email --not-empty'
+        )
     
     if (args.empty or args.not_empty) and args.value is not None:
-        raise DataGrepError('--empty and --not-empty filters do not take a search value. Remove the search value.')
+        raise DataGrepError(
+            'Error: --empty and --not-empty filters do not take a search value.\n'
+            '  These filters check if columns are empty/non-empty, not for specific values.\n'
+            '  Incorrect: datagrep file.csv phone "123" --empty ❌\n'
+            '  Correct:   datagrep file.csv phone --empty ✓'
+        )
     
     if (args.empty or args.not_empty) and not args.columns:
-        raise DataGrepError('--empty and --not-empty require a column name to filter.')
+        raise DataGrepError(
+            'Error: --empty and --not-empty require a column name.\n'
+            '  Specify which column to check.\n'
+            '  Examples:\n'
+            '    datagrep file.csv phone --empty\n'
+            '    datagrep file.csv "email,phone" --empty'
+        )
     
     if (args.empty or args.not_empty) and (args.where or args.sort):
-        raise DataGrepError('Cannot combine --empty/--not-empty with --where or --sort filters.')
+        raise DataGrepError(
+            'Error: Cannot combine --empty/--not-empty with --where or --sort.\n'
+            '  These filters are mutually exclusive.\n'
+            '  Choose one approach:\n'
+            '    datagrep file.csv phone --empty\n'
+            '    datagrep file.csv name john --where "age > 25"'
+        )
     
-    # Check that --where and --sort require a search value
-    if (args.where or args.sort) and not args.value:
-        raise DataGrepError('Search filters (--where, --sort) require a search value.')
+    # Validate --where condition format if provided
+    if args.where:
+        try:
+            # Try parsing the WHERE condition to catch format errors early
+            parse_where_condition(args.where)
+        except DataGrepError as e:
+            raise DataGrepError(
+                f'Error in --where condition: {str(e)}\n'
+                '  Format: "column operator value"\n'
+                '  Operators: ==, !=, >, <, >=, <=, contains, startswith, endswith\n'
+                '  Logic: AND, OR\n'
+                '  Examples:\n'
+                '    --where "age > 25"\n'
+                '    --where "status == active"\n'
+                '    --where "status == active and age > 25"'
+            )
+    
+    # Validate --sort format if provided
+    if args.sort:
+        if ':' not in args.sort:
+            raise DataGrepError(
+                'Error: Invalid --sort format.\n'
+                '  Format: "column:asc" or "column:desc"\n'
+                '  Examples:\n'
+                '    --sort name:asc\n'
+                '    --sort age:desc'
+            )
+        col, order = args.sort.split(':')
+        if order.lower() not in ('asc', 'desc'):
+            raise DataGrepError(
+                f'Error: Invalid sort order "{order}".\n'
+                '  Use "asc" (ascending) or "desc" (descending).\n'
+                '  Examples:\n'
+                '    --sort name:asc\n'
+                '    --sort age:desc'
+            )
+    
+    # Note: --where and --sort can be used without search value
+    # They pre-filter/sort the records, then return all matches
+    # Only non-inspection modes without filters require a search value
     
     if args.value and not args.columns:
         args.columns = '*'
@@ -268,7 +328,15 @@ def parse_where_condition(condition: str) -> Callable[[Dict[str, Any]], bool]:
         """Parse single condition."""
         parts: List[str] = cond.strip().split()
         if len(parts) != 3:
-            raise DataGrepError(f'Condition "{cond}" must be "column op value"')
+            raise DataGrepError(
+                f'Error in WHERE condition: "{cond}"\n'
+                f'  Expected format: "column operator value"\n'
+                f'  Make sure to use spaces around the operator.\n'
+                f'  Examples:\n'
+                f'    --where "name == john"\n'
+                f'    --where "age > 25"\n'
+                f'    --where "status == active"'
+            )
         col, op, val = parts
         ops: Dict[str, Callable[[Any, Any], bool]] = {
             '==': operator.eq,
@@ -282,7 +350,14 @@ def parse_where_condition(condition: str) -> Callable[[Dict[str, Any]], bool]:
             'endswith': lambda a, b: a.endswith(b),
         }
         if op not in ops:
-            raise DataGrepError(f'Unknown operator {op}')
+            raise DataGrepError(
+                f'Error: Unknown operator "{op}" in condition "{cond}"\n'
+                f'  Valid operators are: ==, !=, >, <, >=, <=, contains, startswith, endswith\n'
+                f'  Examples:\n'
+                f'    --where "status == active"\n'
+                f'    --where "age > 25"\n'
+                f'    --where "name contains john"'
+            )
         return lambda row: ops[op](str(row.get(col, '')), val)
 
     if ' and ' in condition:
@@ -675,15 +750,19 @@ def main() -> None:
             missing_search = [col for col in columns if col not in available_columns]
             if missing_search:
                 raise ValueError(
-                    f"Search field(s) not found: {', '.join(missing_search)}. "
-                    f"Available fields: {', '.join(available_columns)}"
+                    f"Error: Search column(s) not found: {', '.join(missing_search)}\n"
+                    f"  Available columns in this file: {', '.join(available_columns)}\n"
+                    f"  Check the column names are spelled correctly (case-sensitive).\n"
+                    f"  Use --inspect to see all available columns."
                 )
 
             missing_select = [col for col in selected_columns if col not in available_columns]
             if missing_select:
                 raise ValueError(
-                    f"Selected field(s) not found: {', '.join(missing_select)}. "
-                    f"Available fields: {', '.join(available_columns)}"
+                    f"Error: --select column(s) not found: {', '.join(missing_select)}\n"
+                    f"  Available columns in this file: {', '.join(available_columns)}\n"
+                    f"  Check the column names are spelled correctly (case-sensitive).\n"
+                    f"  Use --inspect to see all available columns."
                 )
 
             matcher: Callable[[str], bool] = build_matcher(args.value, args.mode, args.ignore_case)
@@ -752,16 +831,37 @@ def main() -> None:
                     file=sys.stderr
                 )
     except FileNotFoundError:
-        print(f"Error: File '{args.input_file}' not found.", file=sys.stderr)
+        print(
+            f"Error: File not found: '{args.input_file}'\n"
+            f"  The file does not exist at that path.\n"
+            f"  Check the path and file name (case-sensitive on Linux/Mac).\n"
+            f"  Try using: pwd (to see current directory) and ls/dir (to list files)",
+            file=sys.stderr
+        )
         sys.exit(1)
     except UnicodeDecodeError:
-        print(f"Error: Failed to decode '{args.input_file}' with encoding {args.encoding}.", file=sys.stderr)
+        print(
+            f"Error: Failed to decode '{args.input_file}' with encoding {args.encoding}.\n"
+            f"  This file may be encoded differently (e.g., UTF-8 vs Latin-1).\n"
+            f"  Try using a different encoding with: --encoding utf-8 or --encoding latin-1\n"
+            f"  To detect encoding: file {args.input_file}",
+            file=sys.stderr
+        )
         sys.exit(1)
     except (ValueError, DataGrepError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         sys.exit(1)
     except re.error as exc:
-        print(f"Regex error: {exc}", file=sys.stderr)
+        print(
+            f"Regex error: Invalid regular expression pattern\n"
+            f"  Error details: {exc}\n"
+            f"  Check your --search value for special regex characters or syntax errors.\n"
+            f"  If using --mode regex, ensure the pattern is valid regex (not a simple string).\n"
+            f"  Examples of valid regex patterns:\n"
+            f"    --mode regex --search '^[A-Z]'          (starts with capital letter)\n"
+            f"    --mode regex --search '[0-9]{{3}}-[0-9]{{4}}' (phone number pattern)",
+            file=sys.stderr
+        )
         sys.exit(1)
     except Exception as exc:
         print(f"An unexpected error occurred: {exc}", file=sys.stderr)

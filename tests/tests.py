@@ -45,16 +45,22 @@ class TestArgumentValidation(unittest.TestCase):
             validate_args(args)
 
     def test_search_filter_requires_value(self):
-        """Test that --where requires a search value."""
+        """Test that --where and --sort can be used without search value."""
+        # --where can be used independently without a search value
         args = type('Args', (), {
             'count': False, 'describe': False, 'sample': 0, 'preview': 0,
             'value': None, 'where': 'age > 25', 'sort': None,
             'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
-            'empty': False, 'not_empty': False
+            'empty': False, 'not_empty': False,
+            'input_file': 'test.csv', 'output': None, 'encoding': 'utf-8',
+            'select': None, 'file': None, 'search': None
         })()
         
-        with self.assertRaises(DataGrepError):
+        # Should not raise an error - --where can be used without a search value
+        try:
             validate_args(args)
+        except DataGrepError:
+            self.fail("validate_args raised DataGrepError when --where is used without search value")
 
 
 class TestSearchMatchers(unittest.TestCase):
