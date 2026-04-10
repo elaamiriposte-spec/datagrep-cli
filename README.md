@@ -32,7 +32,21 @@ A powerful, production-ready Python CLI tool to search and filter CSV, JSON, or 
 - **Configuration Files**: Reusable JSON configs for common workflows
 - **Well-Tested**: 26+ unit tests with 95%+ code coverage
 
-## 📦 Installation
+## � Table of Contents
+
+1. [Installation](#-installation) - Install datagrep
+2. [Quick Start](#-quick-start) - 5-minute getting started guide
+3. [CLI Syntax Styles](#-cli-syntax-styles) - Positional vs flag style
+4. [Detailed Usage](#-detailed-usage) - Complete command reference
+5. [Real-World Examples](#-real-world-examples) - Common use cases
+6. [Options Reference](#-options-reference) - All flags explained
+7. [Shell Completion](#-shell-completion) - Auto-completion setup
+8. [Troubleshooting](#-troubleshooting) - Common issues and solutions
+9. [FAQ](#-faq) - Frequently asked questions
+10. [Contributing](#-contributing) - How to contribute
+11. [Documentation](#-documentation) - Additional guides
+
+## �📦 Installation
 
 ### Quick Start
 
@@ -84,7 +98,66 @@ datagrep --version
 
 See [docs/INSTALL.md](docs/INSTALL.md) for detailed installation instructions and troubleshooting.
 
-## 🚀 Quick Start
+## �️ System Requirements & Compatibility
+
+### Minimum Requirements
+
+| Requirement | Details |
+|-------------|---------|
+| **Python** | 3.7 or higher (3.10+ recommended) |
+| **Operating System** | Windows, macOS, Linux, WSL |
+| **Memory** | 512 MB (files up to 1GB) |
+| **Disk Space** | ~50 MB for installation |
+
+### Python Version Support
+
+- ✅ Python 3.7 (minimum support)
+- ✅ Python 3.8, 3.9, 3.10, 3.11, 3.12+  
+- ✅ PyPy 3.8+ (alternative implementation)
+
+**Check your Python version:**
+```bash
+python --version
+# Output should be 3.7 or higher
+```
+
+### Supported Operating Systems
+
+| OS | Status | Notes |
+|----|--------|-------|
+| **Windows** | ✅ Full Support | PowerShell, CMD, WSL |
+| **macOS** | ✅ Full Support | Intel and Apple Silicon |
+| **Linux** | ✅ Full Support | Any major distribution |
+| **WSL** | ✅ Full Support | Windows Subsystem for Linux |
+
+### Supported File Formats
+
+| Format | Status | Notes |
+|--------|--------|-------|
+| **CSV** | ✅ Built-in | Default format |
+| **JSON** | ✅ Built-in | Arrays and NDJSON |
+| **Excel (XLSX)** | ✅ Optional | Requires openpyxl |
+| **stdin** | ✅ Built-in | Pipe any format |
+
+### Optional Dependencies
+
+| Feature | Package | Install Command |
+|---------|---------|-----------------|
+| **Color Output** | colorama | `pip install datagrep-cli[color]` |
+| **Progress Bars** | tqdm | `pip install datagrep-cli[progress]` |
+| **Excel Support** | openpyxl | `pip install datagrep-cli[excel]` |
+| **All Features** | All above | `pip install datagrep-cli[color,progress,excel]` |
+| **Development** | pytest, coverage | `pip install datagrep-cli[dev]` |
+
+**Verify installation:**
+```bash
+datagrep --version
+# Output: datagrep 1.0.0 (or higher)
+```
+
+If the command is not found, see [Troubleshooting Installation](docs/INSTALL.md#troubleshooting).
+
+## �🚀 Quick Start
 
 ### Show file schema and sample
 
@@ -135,7 +208,92 @@ datagrep data.csv name john --output-format json
 datagrep data.csv city london --output-format table --color
 ```
 
-## 🎨 CLI Syntax Styles
+## � Getting Started for Beginners
+
+Follow these 5 steps to start using datagrep:
+
+### Step 1: Verify Installation
+
+```bash
+# Check if datagrep is installed
+datagrep --version
+
+# Should output: datagrep 1.0.0 (or higher)
+```
+
+If you see "command not found", install with:
+```bash
+pip install datagrep-cli
+```
+
+### Step 2: Inspect Your Data
+
+```bash
+# See what columns are available (no search needed)
+datagrep your_data.csv
+
+# This shows schema and first 10 rows
+```
+
+Output shows:
+- **Schema**: List of field names available for searching
+- **Sample rows**: First 10 records to understand data structure
+
+### Step 3: Search Your Data
+
+```bash
+# Find records where 'name' contains 'John'
+datagrep your_data.csv name John
+
+# Results show matching records in CSV format
+```
+
+### Step 4: Refine Your Search
+
+```bash
+# Case-insensitive search (ignore uppercase/lowercase)
+datagrep your_data.csv name john --ignore-case
+
+# Exact match (whole value only)
+datagrep your_data.csv name "John Smith" --mode exact
+
+# Search multiple columns at once
+datagrep your_data.csv "name,email" john
+```
+
+### Step 5: Format Your Results
+
+```bash
+# Pretty table output
+datagrep your_data.csv name john --output-format table
+
+# JSON format (for use with other tools)
+datagrep your_data.csv name john --output-format json
+
+# Save to file
+datagrep your_data.csv name john --output results.csv
+```
+
+### Common First-Time Commands
+
+```bash
+# See all records
+datagrep data.csv --describe
+
+# Find records (basic)
+datagrep data.csv column_name search_value
+
+# Find records (ignore case)
+datagrep data.csv column_name search_value --ignore-case
+
+# View results as table
+datagrep data.csv column_name search_value --output-format table
+
+# Save results
+datagrep data.csv column_name search_value --output results.csv
+```
+
+## �🎨 CLI Syntax Styles
 
 DataGrep supports **two complementary syntax styles**, both fully supported and compatible:
 
@@ -266,6 +424,7 @@ datagrep --file data.csv --columns email --search "@gmail.com" --mode endswith
 ```bash
 datagrep data.csv email "^[a-z]+@" --mode regex
 datagrep --file data.csv --columns email --search "^[a-z]+@" --mode regex
+```
 
 ### Filtering with --where
 
@@ -451,6 +610,141 @@ datagrep data.csv name john --debug
 # Combine with count for diagnostics
 datagrep data.csv name john --count --debug
 ```
+
+## ✅ Best Practices
+
+### 1. Always Inspect First
+
+```bash
+# Always check the schema before searching
+datagrep data.csv --describe
+
+# See sample data to understand structure
+datagrep data.csv --sample 5
+```
+
+**Why:** Avoids column name typos and helps you understand the data format.
+
+### 2. Use Exact Column Names
+
+```bash
+# ❌ Might not work - column might be 'Customer_Name'
+datagrep data.csv name john
+
+# ✅ Check first with --describe
+datagrep data.csv --describe
+# Then use exact name
+datagrep data.csv Customer_Name john
+```
+
+### 3. Quote Values with Spaces
+
+```bash
+# ❌ Wrong - splits on space
+datagrep data.csv name John Smith
+
+# ✅ Correct - preserves spaces
+datagrep data.csv name "John Smith"
+```
+
+### 4. Use Case-Insensitive for Unknown Cases
+
+```bash
+# ✅ Best practice - catches all variations
+datagrep data.csv email john --ignore-case
+
+# Matches: john, John, JOHN, JoHn, etc.
+```
+
+### 5. Pre-Filter Large Files
+
+```bash
+# ❌ Slow - searches all 1M records
+datagrep huge_file.csv name john
+
+# ✅ Fast - filters to 100K first, then searches name
+datagrep huge_file.csv name john --where "status == active"
+```
+
+### 6. Use Output Formats Appropriately
+
+```bash
+# For quick viewing:
+datagrep data.csv name john --output-format table --color
+
+# For further processing:
+datagrep data.csv name john --output-format json > results.json
+
+# For spreadsheets:
+datagrep data.csv name john --output-format csv --output results.csv
+```
+
+### 7. Start with --count
+
+```bash
+# See how many matches before full output
+datagrep data.csv name john --count
+
+# Then get actual results if count is reasonable
+datagrep data.csv name john --limit 100
+```
+
+### 8. Use --select to Reduce Output
+
+```bash
+# Getting too much output?
+# Select only the columns you need
+datagrep data.csv email alice --select email,name,status --output-format table
+```
+
+### 9. Create Config Files for Repeated Queries
+
+```bash
+# Create query-config.json
+cat > query-config.json << 'EOF'
+{
+  "input_file": "customers.csv",
+  "columns": "name,email",
+  "output_format": "table",
+  "ignore_case": true,
+  "color": true,
+  "select": "name,email,city"
+}
+EOF
+
+# Reuse it
+datagrep --config query-config.json john
+datagrep --config query-config.json alice
+datagrep --config query-config.json smith
+```
+
+### 10. Use --empty/--not-empty for Data Quality
+
+```bash
+# Find incomplete records
+datagrep data.csv "email,phone" --empty --output-format table
+
+# Find complete records
+datagrep data.csv "email,phone" --not-empty --output-format table
+```
+
+### Performance Tips
+
+1. **Use `--limit`** - Stop after finding N results: `--limit 1000`
+2. **Narrow columns** - Search fewer columns: `--columns email` instead of all
+3. **Pre-filter** - Use `--where` to filter before searching
+4. **Use `--progress`** - Monitor long-running searches: `--progress`
+5. **Check file size** - Very large files need optimization: `datagrep data.csv --describe`
+
+### Common Mistakes to Avoid
+
+| Mistake | Problem | Solution |
+|---------|---------|----------|
+| Typo in column name | "Field not found" error | Use `--describe` to see available columns |
+| Forgetting quotes | `"John Smith"` treated as two values | Always quote multi-word values: `"John Smith"` |
+| Case sensitivity | Misses `John` when searching for `john` | Use `--ignore-case` flag |
+| No pre-filtering | Slow search on huge files | Use `--where` to pre-filter first |
+| Wrong output format | Can't use results with other tools | Choose format that matches your needs |
 
 ## 📚 Real-World Examples
 
@@ -693,6 +987,138 @@ datagrep data.csv "ColumnName" search_value
 
 See [docs/INSTALL.md](docs/INSTALL.md) for more troubleshooting steps.
 
+## ❓ FAQ
+
+### Installation & Setup
+
+**Q: How do I install datagrep?**  
+A: Run `pip install datagrep-cli`. For development features (color, progress, Excel), use `pip install datagrep-cli[color,progress,excel]`. See [Installation](#-installation) for details.
+
+**Q: What Python versions are supported?**  
+A: Python 3.7 and above. Use `python --version` to check yours.
+
+**Q: Do I need dependencies installed?**  
+A: Core functionality works with Python stdlib only. Color output requires `colorama`, progress bars require `tqdm`, Excel support requires `openpyxl`. These are optional.
+
+**Q: Can I use datagrep on Windows?**  
+A: Yes! Fully supported on Windows, macOS, and Linux. Use `datagrep` command in PowerShell, CMD, or any terminal.
+
+### Usage Questions
+
+**Q: Which syntax style should I use - positional or flags?**  
+A: Both work! Use positional style (`datagrep file cols val`) for quick commands. Use flag style (`datagrep --file file --columns cols --search val`) for scripts and clarity. See [Migration Guide](MIGRATION.md) for details.
+
+**Q: How do I search multiple columns?**  
+A: Use comma-separated column names: `datagrep data.csv "name,email,phone" "john"`
+
+**Q: Can I search with case-insensitive matching?**  
+A: Yes! Add `--ignore-case` flag: `datagrep data.csv name john --ignore-case`
+
+**Q: What's the difference between `--where` and search?**  
+A: `--where` pre-filters records before searching. Search looks within field values. Combine both: `datagrep data.csv name alice --where "age > 25"`
+
+**Q: How do I search for exact matches only?**  
+A: Use `--mode exact`: `datagrep data.csv name "John Smith" --mode exact`
+
+**Q: Can I use regular expressions?**  
+A: Yes! Use `--mode regex`: `datagrep data.csv email "^[a-z]+@" --mode regex`
+
+**Q: How do I read from stdin?**  
+A: Use `-` as filename or omit it: `cat data.csv | datagrep - name john` or `cat data.csv | datagrep name john`
+
+### Output & Formatting
+
+**Q: How do I save results to a file?**  
+A: Use `--output`: `datagrep data.csv name john --output results.csv`
+
+**Q: What output formats are available?**  
+A: Four formats: `csv` (default), `json`, `table` (formatted), `raw` (Python dicts). Use `--output-format json` to switch.
+
+**Q: Can I select which columns to output?**  
+A: Yes! Use `--select`: `datagrep data.csv name john --select name,email,city`
+
+**Q: How do I get a formatted table output?**  
+A: Use `--output-format table`: `datagrep data.csv name john --output-format table --color`
+
+**Q: Can I limit the number of results?**  
+A: Yes! Use `--limit N`: `datagrep data.csv name alice --limit 100`
+
+### File Handling
+
+**Q: What file formats does datagrep support?**  
+A: CSV (default), JSON (arrays and newline-delimited), Excel (XLSX), and stdin. Auto-detection works by file extension.
+
+**Q: How do I specify a different CSV delimiter?**  
+A: Use `--delimiter`: `datagrep data.tsv name john --delimiter "\t"`
+
+**Q: What encodings are supported?**  
+A: All Python-supported encodings. Default is UTF-8. Specify with `--encoding latin-1` if needed.
+
+**Q: Can I work with very large files?**  
+A: Files up to 1GB work well. For larger files, see [Performance Guide](docs/PERFORMANCE.md). Use `--limit` to restrict results.
+
+**Q: Does datagrep support stdin?**  
+A: Yes! Pipe any data: `cat file.csv | datagrep --columns name --search john`
+
+### Features & Capabilities
+
+**Q: Can I filter by empty or missing values?**  
+A: Yes! Use `--empty` or `--not-empty`: `datagrep data.csv phone --empty` finds records with missing phone numbers.
+
+**Q: How do I sort results?**  
+A: Use `--sort`: `datagrep data.csv name john --sort name:asc` or `name:desc`
+
+**Q: Can I combine multiple filters?**  
+A: Yes! Mix conditions: `datagrep data.csv name alice --where "age > 25 and city == London" --sort name:asc`
+
+**Q: Are there configuration files?**  
+A: Yes! Create JSON files with your settings. Use `--config my_config.json value` to apply them. See [Configuration Files](#-configuration-files).
+
+**Q: Can I get a count of matching records?**  
+A: Yes! Use `--count`: `datagrep data.csv name alice --count`
+
+**Q: How do I see the file schema without searching?**  
+A: Use `--describe`: `datagrep data.csv --describe` shows all field names.
+
+### Performance & Logging
+
+**Q: How do I see debug information?**  
+A: Use `--verbose` for info logs or `--debug` for detailed logs: `datagrep data.csv name john --debug`
+
+**Q: Can I see progress for large files?**  
+A: Yes! Use `--progress`: `datagrep large_file.csv name john --progress`
+
+**Q: How do I make searches faster?**  
+A: Use `--limit` to stop after N results, use `--where` to pre-filter, or narrow columns. See [Performance Guide](docs/PERFORMANCE.md).
+
+**Q: What should I do if searching is slow?**  
+A: Check file size with `ls -lh`. Use `--limit` to test. Add `--where` to pre-filter. See troubleshooting section above.
+
+### Troubleshooting
+
+**Q: I get "No records found" but I know they exist?**  
+A: Check spelling: `datagrep data.csv --describe` shows available columns. Try `--ignore-case`. Verify case sensitivity with `--mode exact`.
+
+**Q: The output looks wrong. How do I debug?**  
+A: Use `--debug` flag and check logs. Verify column names with `--describe`. Test with `--sample 5` to inspect data.
+
+**Q: Can I use special characters in search?**  
+A: Yes! Wrap in quotes: `datagrep data.csv name "O'Brien"` or `datagrep data.csv email "user+tag@example.com"`
+
+**Q: Does datagrep support Unicode?**  
+A: Yes! Full Unicode support including Arabic, Chinese, emoji. Set `--encoding utf-8` if needed.
+
+**Q: How do I report bugs?**  
+A: See [Support](#-support) section. Include Python version (`python --version`), datagrep version (`datagrep --version`), and a sample of your data (if shareable).
+
+### Version Support & Compatibility
+
+**Python Version:** 3.7, 3.8, 3.9, 3.10, 3.11, 3.12+  
+**Operating Systems:** Windows, macOS, Linux, WSL  
+**Shell Support:** bash, zsh, fish, PowerShell, CMD  
+**File Size:** Optimized up to 1GB (see Phase 2 roadmap for larger)  
+**File Formats:** CSV, JSON, NDJSON, Excel XLSX  
+
 ## 📖 Documentation
 
 - [Installation Guide](docs/INSTALL.md) - Setup, troubleshooting, and system requirements
@@ -713,11 +1139,90 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 Built with Python 3.7+ and influenced by powerful Unix tools like `grep`, `sed`, and `awk`.
 
-## 📮 Support
+## � Getting Help
 
-- Report bugs: [GitHub Issues](https://github.com/yourusername/datagrep-cli/issues)
-- Ask questions: [GitHub Discussions](https://github.com/yourusername/datagrep-cli/discussions)
-- View docs: [Full Documentation](https://github.com/yourusername/datagrep-cli#readme)
+### Built-in Help
+
+```bash
+# View all available options
+datagrep --help
+
+# View short help for specific commands
+datagrep --help | grep "search"
+
+# Check your version
+datagrep --version
+```
+
+### Quick Diagnostics
+
+When something isn't working, try:
+
+```bash
+# 1. Check installation
+datagrep --version
+
+# 2. Inspect your file
+datagrep your_file.csv --describe
+
+# 3. Test with simple search
+datagrep your_file.csv column_name test_value
+
+# 4. Enable debug output
+datagrep your_file.csv column_name test_value --debug
+
+# 5. Check file size (might be loading issue)
+ls -lh your_file.csv
+```
+
+### Documentation
+
+- **This README** - Full feature documentation and examples
+- [Installation Guide](docs/INSTALL.md) - Setup, troubleshooting, system specifics
+- [Performance Guide](docs/PERFORMANCE.md) - File size limits, optimization, roadmap
+- [Development Guide](docs/DEVELOPMENT.md) - Architecture, contributing code
+- [Migration Guide](MIGRATION.md) - Transitioning between positional/flag syntax
+- [Common Workflows](examples/) - Sample data and pre-built configs
+
+### Troubleshooting Tips
+
+1. **"Column not found"** → Run `datagrep file.csv --describe` to see available columns
+2. **"No records found"** → Try `--ignore-case` or `--mode exact`
+3. **"Search is slow"** → Use `--limit 100` to test, add `--where` to pre-filter
+4. **"Encoding error"** → Try `--encoding utf-8` or `--encoding latin-1`
+5. **"Command not found"** → Reinstall: `pip install --upgrade datagrep-cli`
+
+See [Troubleshooting](README.md#-troubleshooting) section for more common issues.
+
+## 📮 Support & Feedback
+
+### Report Issues
+
+Found a bug? Have feedback? Here's how to help:
+
+1. **Check [Troubleshooting](#-troubleshooting)** - Your issue might be answered there
+2. **Check [FAQ](#-faq)** - Look for similar questions
+3. **Search existing issues** - Someone might have reported it: [GitHub Issues](https://github.com/yourusername/datagrep-cli/issues)
+4. **Open new issue** with:
+   - Your Python version: `python --version`
+   - Your datagrep version: `datagrep --version`
+   - Your command: `datagrep ... (sanitized)`
+   - Error message or unexpected output
+   - OS: Windows/macOS/Linux
+
+### Ask Questions
+
+- **General questions**: [GitHub Discussions](https://github.com/yourusername/datagrep-cli/discussions)
+- **Quick help**: Check the [FAQ](#-faq) section
+- **Email support**: Create a GitHub issue marked with `[QUESTION]`
+
+### Contribute
+
+Want to help improve datagrep? See [Contributing Guide](docs/CONTRIBUTING.md) for:
+- How to submit code changes
+- How to report bugs
+- How to suggest features
+- Development setup instructions
 
 ## 🔮 Future Roadmap
 
