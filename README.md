@@ -135,68 +135,137 @@ datagrep data.csv name john --output-format json
 datagrep data.csv city london --output-format table --color
 ```
 
+## 🎨 CLI Syntax Styles
+
+DataGrep supports **two complementary syntax styles**, both fully supported and compatible:
+
+### Positional Arguments Style (Legacy)
+
+The classic, concise style with positional arguments:
+
+```bash
+# Format: datagrep FILE COLUMNS VALUE [OPTIONS]
+datagrep data.csv name john
+datagrep data.csv "name,email" alice --ignore-case
+datagrep data.csv city london --output-format table
+```
+
+**Best for:** Quick commands, scripting, muscle memory
+
+### Explicit Flags Style (Modern)
+
+The self-documenting style with explicit flags:
+
+```bash
+# Format: datagrep --file FILE --columns COLUMNS --search VALUE [OPTIONS]
+datagrep --file data.csv --columns name --search john
+datagrep --file data.csv --columns name,email --search alice --ignore-case
+datagrep --file data.csv --columns city --search london --output-format table
+```
+
+**Best for:** Complex commands, clarity, team collaboration, discoverability
+
+### Mixed Usage
+
+Both styles can be combined (flags take precedence):
+
+```bash
+# File positional, search as flag
+datagrep data.csv --search john
+
+# File as flag, columns positional
+datagrep --file data.csv "name,email" john
+
+# All flags (most explicit)
+datagrep --file data.csv --columns name,email --search john --ignore-case --output-format json
+```
+
+**Key Differences:**
+
+| Aspect | Positional | Flags |
+|--------|-----------|-------|
+| **Syntax** | `datagrep file cols val` | `datagrep --file file --columns cols --search val` |
+| **Order** | Fixed order | Any order |
+| **Clarity** | Concise, compact | Self-documenting |
+| **Flag Precedence** | N/A | Flags override positional |
+| **Typing** | Shorter | More explicit |
+
 ## 📖 Detailed Usage
 
-### Command Syntax
+### Command Syntax (Both Styles)
 
+**Positional style:**
 ```
 datagrep [OPTIONS] [input_file] [columns] [value]
 ```
 
+**Flag style:**
+```
+datagrep [OPTIONS] --file FILE --columns COLUMNS --search VALUE
+```
+
 **Arguments:**
-- `input_file`: CSV/JSON/Excel file or `-` for stdin (optional, defaults to stdin)
-- `columns`: Comma-separated field names to search, or leave empty for inspection mode
-- `value`: Search value or pattern
+- `input_file` / `--file FILE`: CSV/JSON/Excel file or `-` for stdin (optional, defaults to stdin)
+- `columns` / `--columns COLUMNS`: Comma-separated field names to search
+- `value` / `--search VALUE`: Search value or pattern
 
 ### Inspection Modes (No Search Value)
 
 When no search value is provided, datagrep operates in inspection mode:
 
 ```bash
-# Show schema and samples
-datagrep data.csv
-
-# Describe schema only
+# Positional style
 datagrep data.csv --describe
-
-# Show first N rows
 datagrep data.csv --sample 5
 
-# Show first N matching rows (when searching)
-datagrep data.csv email gmail --preview 10
+# Flag style
+datagrep --file data.csv --describe
+datagrep --file data.csv --sample 5
+```
 
-# Count total records
-datagrep data.csv --count
+**Modes:**
+```bash
+# Show schema and samples (default)
+datagrep --file data.csv
+
+# Describe schema only
+datagrep --file data.csv --describe
+
+# Show first N rows
+datagrep --file data.csv --sample 5
 ```
 
 ### Search Modes
 
 **Contains (default)** - Substring matching:
 ```bash
-datagrep data.csv name john
-datagrep data.csv name john --ignore-case  # Case-insensitive
+# Both styles work the same
+datagrep data.csv name john --ignore-case
+datagrep --file data.csv --columns name --search john --ignore-case
 ```
 
 **Exact** - Exact match:
 ```bash
 datagrep data.csv name "John Smith" --mode exact
+datagrep --file data.csv --columns name --search "John Smith" --mode exact
 ```
 
 **Startswith** - Prefix matching:
 ```bash
 datagrep data.csv email "john@" --mode startswith
+datagrep --file data.csv --columns email --search "john@" --mode startswith
 ```
 
 **Endswith** - Suffix matching:
 ```bash
 datagrep data.csv email "@gmail.com" --mode endswith
+datagrep --file data.csv --columns email --search "@gmail.com" --mode endswith
 ```
 
 **Regex** - Regular expressions:
 ```bash
 datagrep data.csv email "^[a-z]+@" --mode regex
-datagrep data.csv phone "\\d{3}-\\d{4}" --mode regex
-```
+datagrep --file data.csv --columns email --search "^[a-z]+@" --mode regex
 
 ### Filtering with --where
 
@@ -452,30 +521,44 @@ datagrep data.xlsx field value --output-format json --output data.json
 
 | Option | Short | Type | Default | Description |
 |--------|-------|------|---------|-------------|
+| **Input Arguments** | | | | |
+| `--file` | `-f` | PATH | stdin | Input file path (modern flag style) |
+| `--columns` | | STR | * | Columns to search (modern flag style) |
+| `--search` | `-S` | STR | | Search value/pattern (modern flag style) |
+| **Search Options** | | | | |
 | `--input-format` | | CHOICE | auto | Input format: auto,csv,json,xlsx |
 | `--mode` | | CHOICE | contains | Search mode: contains,exact,startswith,endswith,regex |
 | `--ignore-case` | `-i` | BOOL | False | Ignore case in search |
+| **Output Options** | | | | |
 | `--delimiter` | `-d` | STR | , | CSV delimiter |
 | `--encoding` | | STR | utf-8 | File encoding |
 | `--output-format` | | CHOICE | csv | Output: csv,json,table,raw |
 | `--select` | `-s` | STR | * | Columns in output (comma-sep) |
 | `--output` | `-o` | PATH | stdout | Output file |
+| **Filtering Options** | | | | |
 | `--limit` | `-n` | INT | 0 | Max results (0=unlimited) |
 | `--sort` | | STR | | Sort: column:asc or column:desc |
 | `--where` | | STR | | Filter: "column op value" |
 | `--empty` | | BOOL | False | Show rows where column is empty |
 | `--not-empty` | | BOOL | False | Show rows where column has value |
+| **Inspection Modes** | | | | |
 | `--count` | | BOOL | False | Count only, no output |
+| `--describe` | | BOOL | False | Show schema only |
+| `--sample` | | INT | 0 | Show sample N rows |
+| `--preview` | | INT | 0 | Preview N rows (with search) |
+| **Other Options** | | | | |
 | `--config` | | PATH | | Load config from JSON file |
 | `--color` | | BOOL | False | Colorize output |
 | `--progress` | | BOOL | False | Show progress bar |
-| `--preview` | | INT | 0 | Preview N rows (0=unlimited) |
-| `--sample` | | INT | 0 | Show sample N rows |
 | `--verbose` | `-v` | BOOL | False | Verbose logging |
 | `--debug` | | BOOL | False | Debug logging |
-| `--describe` | | BOOL | False | Show schema only |
 | `--version` | | | | Show version |
 | `--help` | `-h` | | | Show help |
+
+**Notes:**
+- Input arguments can use **positional style** (`datagrep file cols val`) or **flag style** (`datagrep --file file --columns cols --search val`)
+- When using flag style, order doesn't matter
+- If both positional and flag versions are provided, flags take precedence
 
 ## 🐚 Shell Completion
 

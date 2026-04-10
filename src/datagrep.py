@@ -43,13 +43,17 @@ class DataGrepError(Exception):
 def parse_args() -> argparse.Namespace:
     """Parse command-line arguments.
     
+    Supports both styles:
+    - Legacy positional: datagrep file.csv columns value
+    - Modern flags: datagrep --file file.csv --columns columns --search value
+    
     Returns:
         Namespace with parsed arguments.
     """
     parser = argparse.ArgumentParser(
         prog='datagrep',
         description='Search CSV, JSON, or Excel records by field values with flexible matching modes.',
-        epilog='Use - for input_file to read from stdin. Inspection modes do not require search parameters.',
+        epilog='Use - for input_file to read from stdin. Inspection modes do not require search parameters. Supports both positional args (legacy) and explicit flags (modern).',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         add_help=True
     )
@@ -59,9 +63,24 @@ def parse_args() -> argparse.Namespace:
         help='Show version and exit.'
     )
     
-    parser.add_argument('input_file', nargs='?', default='-', help='Input file path or - for stdin.')
-    parser.add_argument('columns', nargs='?', default=None, help='Comma-separated field names to search.')
-    parser.add_argument('value', nargs='?', default=None, help='Search value or pattern.')
+    # Legacy positional arguments (optional, for backward compatibility)
+    parser.add_argument('input_file', nargs='?', default=None, help='(Legacy positional) Input file path or - for stdin.')
+    parser.add_argument('columns', nargs='?', default=None, help='(Legacy positional) Comma-separated field names to search.')
+    parser.add_argument('value', nargs='?', default=None, help='(Legacy positional) Search value or pattern.')
+    
+    # Modern explicit flags (optional, take precedence over positional)
+    parser.add_argument(
+        '--file', '-f', dest='file_flag', default=None,
+        help='Input file path or - for stdin (modern flag style).'
+    )
+    parser.add_argument(
+        '--columns', dest='columns_flag', default=None,
+        help='Comma-separated field names to search (modern flag style).'
+    )
+    parser.add_argument(
+        '--search', '-S', dest='search_flag', default=None,
+        help='Search value or pattern (modern flag style).'
+    )
     
     parser.add_argument(
         '--input-format', choices=['auto', 'csv', 'json', 'xlsx'], default='auto',
@@ -136,7 +155,38 @@ def parse_args() -> argparse.Namespace:
         '--describe', action='store_true', help='Show file schema and sample data (inspection mode).'
     )
     
-    return parser.parse_args()
+    args = parser.parse_args()
+    return _reconcile_args(args)
+
+
+def _reconcile_args(args: argparse.Namespace) -> argparse.Namespace:
+    """Reconcile positional and flag-based arguments for backward compatibility.
+    
+    Priority: flags > positional arguments
+    
+    Args:
+        args: Parsed arguments with both positional and flag versions.
+        
+    Returns:
+        Reconciled arguments with consolidated values.
+    """
+    # Reconcile input_file / --file flag
+    args.input_file = args.file_flag or args.input_file or '-'
+    
+    # Reconcile columns / --columns flag
+    if args.columns_flag:
+        args.columns = args.columns_flag
+    
+    # Reconcile value / --search flag
+    if args.search_flag:
+        args.value = args.search_flag
+    
+    # Remove flag attributes to avoid confusion
+    delattr(args, 'file_flag')
+    delattr(args, 'columns_flag')
+    delattr(args, 'search_flag')
+    
+    return args
 
 
 def validate_args(args: argparse.Namespace) -> argparse.Namespace:
