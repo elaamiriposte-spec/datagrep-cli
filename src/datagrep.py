@@ -717,7 +717,34 @@ def main() -> None:
                     print(format_table(records, selected_columns, args.color))
                     return
                 
-                # Show schema and sample when no search value provided and no --empty/--not-empty
+                # Handle --where and --sort without search value
+                if args.where or args.sort:
+                    # Apply where filter
+                    if args.where:
+                        logging.debug("Applying where filter: %s", args.where)
+                        where_func: Callable[[Dict[str, Any]], bool] = parse_where_condition(args.where)
+                        records = [r for r in records if where_func(r)]
+                        logging.info("After where filter: %d records", len(records))
+
+                    # Apply sorting
+                    if args.sort:
+                        logging.debug("Applying sort: %s", args.sort)
+                        sort_col, sort_order = args.sort.split(':')
+                        reverse: bool = sort_order.lower() == 'desc'
+                        records.sort(key=lambda r: str(r.get(sort_col, '')), reverse=reverse)
+                        logging.info("Records sorted by %s %s", sort_col, sort_order)
+
+                    if not records:
+                        print("No records match the filter.")
+                        return
+                    
+                    # Show filtered results
+                    if selected_columns == ['*']:
+                        selected_columns = available_columns
+                    print(format_table(records, selected_columns, args.color))
+                    return
+                
+                # Show schema and sample when no search value provided and no filters
                 print("Schema:")
                 for col in available_columns:
                     print(f"  - {col}")
@@ -727,21 +754,8 @@ def main() -> None:
                     print(format_table(sample_rows, available_columns, args.color))
                 return
 
-            # Apply where filter
-            if args.where:
-                logging.debug("Applying where filter: %s", args.where)
-                where_func: Callable[[Dict[str, Any]], bool] = parse_where_condition(args.where)
-                records = [r for r in records if where_func(r)]
-                logging.info("After where filter: %d records", len(records))
-
-            # Apply sorting
-            if args.sort:
-                logging.debug("Applying sort: %s", args.sort)
-                sort_col, sort_order = args.sort.split(':')
-                reverse: bool = sort_order.lower() == 'desc'
-                records.sort(key=lambda r: str(r.get(sort_col, '')), reverse=reverse)
-                logging.info("Records sorted by %s %s", sort_col, sort_order)
-
+            # Search path: args.value is provided
+            
             if columns == ['*']:
                 columns = available_columns
             if selected_columns == ['*']:
@@ -764,6 +778,21 @@ def main() -> None:
                     f"  Check the column names are spelled correctly (case-sensitive).\n"
                     f"  Use --inspect to see all available columns."
                 )
+
+            # Apply where filter (when search value is provided)
+            if args.where:
+                logging.debug("Applying where filter: %s", args.where)
+                where_func: Callable[[Dict[str, Any]], bool] = parse_where_condition(args.where)
+                records = [r for r in records if where_func(r)]
+                logging.info("After where filter: %d records", len(records))
+
+            # Apply sorting (when search value is provided)
+            if args.sort:
+                logging.debug("Applying sort: %s", args.sort)
+                sort_col, sort_order = args.sort.split(':')
+                reverse: bool = sort_order.lower() == 'desc'
+                records.sort(key=lambda r: str(r.get(sort_col, '')), reverse=reverse)
+                logging.info("Records sorted by %s %s", sort_col, sort_order)
 
             matcher: Callable[[str], bool] = build_matcher(args.value, args.mode, args.ignore_case)
             logging.debug("Searching for '%s' in columns: %s", args.value, ', '.join(columns))
