@@ -513,6 +513,10 @@ datagrep data.csv name alice --preview 10
 
 # Count only (no output)
 datagrep data.csv name alice --count
+
+# Show count and display the data (works with all filters)
+datagrep data.csv name alice --show-count
+datagrep data.csv name alice --where "age > 25" --show-count
 ```
 
 ### Filtering by Empty or Not-Empty Values
@@ -837,6 +841,7 @@ datagrep data.xlsx field value --output-format json --output data.json
 | `--not-empty` | | BOOL | False | Show rows where column has value |
 | **Inspection Modes** | | | | |
 | `--count` | | BOOL | False | Count only, no output |
+| `--show-count` | | BOOL | False | Show count and display filtered data |
 | `--describe` | | BOOL | False | Show schema only |
 | `--sample` | | INT | 0 | Show sample N rows |
 | `--preview` | | INT | 0 | Preview N rows (with search) |
@@ -1075,7 +1080,7 @@ A: Yes! Mix conditions: `datagrep data.csv name alice --where "age > 25 and city
 A: Yes! Create JSON files with your settings. Use `--config my_config.json value` to apply them. See [Configuration Files](#-configuration-files).
 
 **Q: Can I get a count of matching records?**  
-A: Yes! Use `--count`: `datagrep data.csv name alice --count`
+A: Yes! Use `--count` to show only the count: `datagrep data.csv name alice --count`. Use `--show-count` to display the count AND the data: `datagrep data.csv name alice --show-count`. Both work with filters like `--where`, `--sort`, `--empty`, and `--not-empty`.
 
 **Q: How do I see the file schema without searching?**  
 A: Use `--describe`: `datagrep data.csv --describe` shows all field names.
