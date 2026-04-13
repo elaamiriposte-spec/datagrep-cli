@@ -20,7 +20,7 @@ class TestArgumentValidation(unittest.TestCase):
             'count': True, 'describe': False, 'sample': 0, 'preview': 0,
             'value': None, 'where': None, 'sort': None,
             'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
-            'empty': False, 'not_empty': False
+            'empty': False, 'not_empty': False, 'show_count': False
         })()
         
         args.count = False
@@ -35,10 +35,10 @@ class TestArgumentValidation(unittest.TestCase):
     def test_inspection_mode_with_search(self):
         """Test that inspection modes cannot be used with search value."""
         args = type('Args', (), {
-            'count': True, 'describe': False, 'sample': 0, 'preview': 0,
+            'count': False, 'describe': True, 'sample': 0, 'preview': 0,
             'value': 'test', 'where': None, 'sort': None,
             'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
-            'empty': False, 'not_empty': False
+            'empty': False, 'not_empty': False, 'show_count': False
         })()
         
         with self.assertRaises(DataGrepError):
@@ -51,7 +51,7 @@ class TestArgumentValidation(unittest.TestCase):
             'count': False, 'describe': False, 'sample': 0, 'preview': 0,
             'value': None, 'where': 'age > 25', 'sort': None,
             'columns': None, 'limit': 0, 'mode': 'contains', 'ignore_case': False,
-            'empty': False, 'not_empty': False,
+            'empty': False, 'not_empty': False, 'show_count': False,
             'input_file': 'test.csv', 'output': None, 'encoding': 'utf-8',
             'select': None, 'file': None, 'search': None
         })()

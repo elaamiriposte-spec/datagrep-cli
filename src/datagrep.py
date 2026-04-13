@@ -128,7 +128,10 @@ def parse_args() -> argparse.Namespace:
         '--not-empty', action='store_true', help='Show only rows where specified column has a value.'
     )
     parser.add_argument(
-        '--count', action='store_true', help='Only count matching records (mutually exclusive with other inspection modes).'
+        '--count', action='store_true', help='Only count matching/filtered records (works with --where, --sort, --empty, --not-empty).'
+    )
+    parser.add_argument(
+        '--show-count', action='store_true', help='Show count of matching/filtered records followed by the data.'
     )
     parser.add_argument(
         '--config', help='Load configuration from JSON file.'
@@ -201,16 +204,31 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
     Raises:
         DataGrepError: When invalid argument combinations are detected.
     """
-    inspection_modes: List[bool] = [args.count, args.describe, args.sample > 0, args.preview > 0]
+    # --count and --show-count are mutually exclusive
+    if args.count and args.show_count:
+        raise DataGrepError(
+            'Error: Cannot use --count and --show-count together.\n'
+            '  Choose one:\n'
+            '    --count          (show only the count)\n'
+            '    --show-count     (show count + data)'
+        )
+    
+    # Inspection modes (--describe, --sample, --preview) - mutually exclusive
+    inspection_modes: List[bool] = [args.describe, args.sample > 0, args.preview > 0]
     inspection_count: int = sum(inspection_modes)
     
     if inspection_count > 1:
-        raise DataGrepError('Cannot combine --count, --describe, --sample, and --preview. Use only one.')
+        raise DataGrepError('Cannot combine --describe, --sample, and --preview. Use only one.')
     
     in_inspection_mode: bool = inspection_count > 0
     
+    # --count cannot be combined with other inspection modes (--describe, --sample, --preview)
+    if args.count and in_inspection_mode:
+        raise DataGrepError('Cannot combine --count with --describe, --sample, or --preview.')
+    
+    # Inspection modes cannot be used with search value
     if in_inspection_mode and args.value is not None:
-        raise DataGrepError('Inspection modes (--count, --describe, --sample, --preview) cannot be used with search value.')
+        raise DataGrepError('Inspection modes (--describe, --sample, --preview) cannot be used with search value.')
     
     # Validate --empty and --not-empty
     if args.empty and args.not_empty:
@@ -285,9 +303,10 @@ def validate_args(args: argparse.Namespace) -> argparse.Namespace:
                 '    --sort age:desc'
             )
     
-    # Note: --where and --sort can be used without search value
-    # They pre-filter/sort the records, then return all matches
-    # Only non-inspection modes without filters require a search value
+    # Note: --count and --show-count work with:
+    # - Search values (regular search)
+    # - Filters (--where, --sort, --empty, --not-empty)
+    # - But NOT with inspection modes (--describe, --sample, --preview)
     
     if args.value and not args.columns:
         args.columns = '*'
@@ -555,8 +574,9 @@ def _should_load_eagerly(args: argparse.Namespace) -> bool:
     """Determine if records should be loaded eagerly (all at once) vs lazily.
     
     Eager loading is required for:
-    - Inspection modes (--describe, --count without value, --sample, --preview without value)
+    - Inspection modes (--describe, --sample, --preview)
     - Filtering (--where, --sort, --empty, --not-empty)
+    - Counting (--count, --show-count)
     - When no limit is specified
     
     Args:
@@ -568,6 +588,7 @@ def _should_load_eagerly(args: argparse.Namespace) -> bool:
     inspection_modes: List[bool] = [args.describe, args.sample > 0, args.preview > 0]
     has_inspection = any(inspection_modes)
     has_filters = bool(args.where or args.sort or args.empty or args.not_empty)
+    has_counting = bool(args.count or args.show_count)
     has_no_value = args.value is None
     
     # Need eager loading if:
@@ -577,10 +598,12 @@ def _should_load_eagerly(args: argparse.Namespace) -> bool:
         return True
     if has_filters:  # Any filtering
         return True
+    if has_counting:  # Any counting (need all records for accurate count)
+        return True
     if not args.limit:  # No limit specified, need all for full output
         return True
     
-    # Can use lazy loading: search with --limit, no filters, no inspection
+    # Can use lazy loading: search with --limit, no filters, no inspection, no counting
     return False
 
 
@@ -671,14 +694,6 @@ def main() -> None:
                 for col in available_columns:
                     print(f"  - {col}")
                 return
-            elif args.count and not args.value:
-                if isinstance(records, list):
-                    print(len(records))
-                else:
-                    # This shouldn't happen with eager loading check, but fallback to counting
-                    records = list(records)
-                    print(len(records))
-                return
             elif args.sample:
                 if isinstance(records, list):
                     sample_rows: List[Dict[str, Any]] = records[:args.sample]
@@ -707,6 +722,10 @@ def main() -> None:
                         records = [r for r in records if any(str(r.get(col, '')).strip() != '' for col in filter_columns)]
                         logging.info("After not-empty filter: %d records", len(records))
                     
+                    if args.count:
+                        print(len(records))
+                        return
+                    
                     if not records:
                         print("No records match the filter.")
                         return
@@ -714,7 +733,12 @@ def main() -> None:
                     # Show filtered results
                     if selected_columns == ['*']:
                         selected_columns = available_columns
-                    print(format_table(records, selected_columns, args.color))
+                    
+                    if args.show_count:
+                        print(f"Count: {len(records)}")
+                        print(format_table(records, selected_columns, args.color))
+                    else:
+                        print(format_table(records, selected_columns, args.color))
                     return
                 
                 # Handle --where and --sort without search value
@@ -734,6 +758,10 @@ def main() -> None:
                         records.sort(key=lambda r: str(r.get(sort_col, '')), reverse=reverse)
                         logging.info("Records sorted by %s %s", sort_col, sort_order)
 
+                    if args.count:
+                        print(len(records))
+                        return
+                    
                     if not records:
                         print("No records match the filter.")
                         return
@@ -741,7 +769,12 @@ def main() -> None:
                     # Show filtered results
                     if selected_columns == ['*']:
                         selected_columns = available_columns
-                    print(format_table(records, selected_columns, args.color))
+                    
+                    if args.show_count:
+                        print(f"Count: {len(records)}")
+                        print(format_table(records, selected_columns, args.color))
+                    else:
+                        print(format_table(records, selected_columns, args.color))
                     return
                 
                 # Show schema and sample when no search value provided and no filters
@@ -831,22 +864,35 @@ def main() -> None:
             output_file: Union[TextIO, io.TextIOBase] = open(args.output, 'w', encoding=args.encoding, newline='') if args.output else sys.stdout
             try:
                 if args.output_format == 'csv':
+                    if args.show_count:
+                        output_file.write(f"Count: {len(matches)}\n")
                     writer = csv.DictWriter(output_file, fieldnames=selected_columns, delimiter=args.delimiter)
                     writer.writeheader()
                     for row in matches:
                         writer.writerow({col: row.get(col, '') for col in selected_columns})
                 elif args.output_format == 'json':
-                    json.dump(
-                        [{col: row.get(col, '') for col in selected_columns} for row in matches],
-                        output_file,
-                        ensure_ascii=False,
-                        indent=2
-                    )
+                    if args.show_count:
+                        output_data = {
+                            'count': len(matches),
+                            'data': [{col: row.get(col, '') for col in selected_columns} for row in matches]
+                        }
+                        json.dump(output_data, output_file, ensure_ascii=False, indent=2)
+                    else:
+                        json.dump(
+                            [{col: row.get(col, '') for col in selected_columns} for row in matches],
+                            output_file,
+                            ensure_ascii=False,
+                            indent=2
+                        )
                     output_file.write('\n')
                 elif args.output_format == 'table':
+                    if args.show_count:
+                        output_file.write(f"Count: {len(matches)}\n")
                     output_file.write(format_table(matches, selected_columns, args.color))
                     output_file.write('\n')
                 else:
+                    if args.show_count:
+                        output_file.write(f"Count: {len(matches)}\n")
                     for row in matches:
                         subset = {col: row.get(col, '') for col in selected_columns}
                         output_file.write(f"{subset}\n")
