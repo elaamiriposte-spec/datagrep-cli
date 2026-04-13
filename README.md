@@ -159,6 +159,26 @@ If the command is not found, see [Troubleshooting Installation](docs/INSTALL.md#
 
 ## �🚀 Quick Start
 
+- Example  (Modular):
+
+```bash
+python -m src.datagrep examples/data/sample_customers.csv --columns first_name --search j  --where "status == active" --select first_name  --output-format json
+
+```
+
+- Output:
+
+```json
+[
+  {
+    "first_name": "Benjie"
+  },
+  {
+    "first_name": "Marjorie"
+  }
+]
+```
+
 ### Show file schema and sample
 
 ```bash

@@ -42,6 +42,10 @@ class OutputFormatter:
                 self._write_table(output_file, records, selected_columns, show_count)
             else:  # raw
                 self._write_raw(output_file, records, selected_columns, show_count)
+            
+            # Flush output before closing
+            if hasattr(output_file, 'flush'):
+                output_file.flush()
         finally:
             if self.args.output:
                 output_file.close()
