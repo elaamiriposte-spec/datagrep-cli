@@ -231,6 +231,50 @@ datagrep data.csv name john --output-format json
 datagrep data.csv city london --output-format table --color
 ```
 
+## 📖 Find Your Documentation
+
+Know what you're looking for? Navigate directly to the right guide:
+
+### By Role/Need
+
+| Your Situation | Best Path | Documents |
+|---|---|---|
+| **👶 First-time user** | Installation → Quick Start → Examples | [INSTALLATION.md](docs/INSTALLATION.md) → Go below → [USAGE.md](docs/USAGE.md) |
+| **👤 Regular user** | Examples for your task → Options reference | [USAGE.md](docs/USAGE.md) → [OPTIONS.md](docs/OPTIONS.md) |
+| **⚡ Power user** | Advanced techniques → Performance tips | [USAGE.md - Advanced](docs/USAGE.md#advanced-techniques) → [PERFORMANCE.md](docs/PERFORMANCE.md) |
+| **💾 Big data user** | Performance guide → Optimization | [PERFORMANCE.md](docs/PERFORMANCE.md) → [USAGE.md - Performance](docs/USAGE.md#performance-tips) |
+| **🔧 Developer** | Architecture → Contributing | [ARCHITECTURE.md](docs/ARCHITECTURE.md) → [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **🐛 Troubleshooting** | FAQ → Specific section | [FAQ.md](docs/FAQ.md) → [USAGE.md - Troubleshooting](docs/USAGE.md#troubleshooting) |
+
+### By Question
+
+| Question | Answer |
+|---|---|
+| **"How do I install?"** | → [Installation Guide](docs/INSTALLATION.md) |
+| **"How do I search a CSV?"** | → [USAGE.md - Quick Start](docs/USAGE.md#quick-start) |
+| **"What does `--where` do?"** | → [OPTIONS.md - where](docs/OPTIONS.md#--where) |
+| **"How do I get colored output?"** | → [OPTIONS.md - color](docs/OPTIONS.md#--color) |
+| **"Why isn't my search working?"** | → [FAQ.md - Troubleshooting](docs/FAQ.md#troubleshooting) |
+| **"How do I speed up large files?"** | → [PERFORMANCE.md](docs/PERFORMANCE.md) |
+| **"How do I contribute code?"** | → [CONTRIBUTING.md](CONTRIBUTING.md) |
+| **"I have a question..."** | → [FAQ.md](docs/FAQ.md) or [docs/INDEX.md](docs/INDEX.md) |
+
+### All Documentation
+
+**User Guides:**
+- [INSTALLATION.md](docs/INSTALLATION.md) - Setup on Windows, macOS, Linux, Docker
+- [USAGE.md](docs/USAGE.md) - 30+ practical examples and advanced techniques
+- [OPTIONS.md](docs/OPTIONS.md) - Complete CLI options reference
+- [FAQ.md](docs/FAQ.md) - 40+ frequently asked questions
+
+**Developer Guides:**
+- [ARCHITECTURE.md](docs/ARCHITECTURE.md) - System design and modules
+- [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute code
+- [PERFORMANCE.md](docs/PERFORMANCE.md) - Optimization and file size limits
+
+**Navigation:**
+- [docs/INDEX.md](docs/INDEX.md) - Complete documentation index with search strategy
+
 ## � Getting Started for Beginners
 
 Follow these 5 steps to start using datagrep:
