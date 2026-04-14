@@ -12,6 +12,9 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![Type Hints](https://img.shields.io/badge/typing-compatible-brightgreen)](https://github.com/python/typeshed)
+[![Test Status](https://img.shields.io/badge/tests-passing-brightgreen)]()
+
+
 
 A powerful, production-ready Python CLI tool to search and filter CSV, JSON, or Excel records with flexible matching modes, advanced filtering, sorting, and multiple output formats.
 

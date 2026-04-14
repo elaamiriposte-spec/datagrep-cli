@@ -40,7 +40,7 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'datagrep=datagrep:main',
+            'datagrep=cli:main',
         ],
     },
     include_package_data=True,

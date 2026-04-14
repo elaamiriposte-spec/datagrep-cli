@@ -6,8 +6,8 @@ import re
 import sys
 from typing import Any, Callable, Dict, List, Union
 
-from .core import DataLoader, OutputFormatter, SearchEngine
-from .utils import DataGrepError, format_table, load_config, parse_where_condition
+from core import DataLoader, OutputFormatter, SearchEngine
+from utils import DataGrepError, format_table, load_config, parse_where_condition
 
 __version__ = "1.0.0"
 

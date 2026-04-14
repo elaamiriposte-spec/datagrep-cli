@@ -1,6 +1,6 @@
 """datagrep - powerful command-line data search tool for CSV, JSON, and Excel files."""
 
-from .cli import main
+from cli import main
 
 __version__ = "1.0.0"
 

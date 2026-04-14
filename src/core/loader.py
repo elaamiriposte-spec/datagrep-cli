@@ -4,46 +4,9 @@ import argparse
 import csv
 import io
 import logging
-from typing import Any, Dict, Iterator, List, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO, Union
 
-from ..utils import load_json_records, load_excel_records, open_input_file, check_file_size
-
-
-def _should_load_eagerly(args: argparse.Namespace) -> bool:
-    """Determine if records should be loaded eagerly (all at once) vs lazily.
-    
-    Eager loading is required for:
-    - Inspection modes (--describe, --sample, --preview)
-    - Filtering (--where, --sort, --empty, --not-empty)
-    - Counting (--count, --show-count)
-    - When no limit is specified
-    
-    Args:
-        args: Parsed command-line arguments.
-        
-    Returns:
-        True if should load all records eagerly, False for lazy loading.
-    """
-    inspection_modes: List[bool] = [args.describe, args.sample > 0, args.preview > 0]
-    has_inspection = any(inspection_modes)
-    has_filters = bool(args.where or args.sort or args.empty or args.not_empty)
-    has_counting = bool(args.count or args.show_count)
-    has_no_value = args.value is None
-    
-    # Need eager loading if:
-    if has_no_value:  # Inspection mode without value
-        return True
-    if has_inspection:  # Any inspection mode
-        return True
-    if has_filters:  # Any filtering
-        return True
-    if has_counting:  # Any counting (need all records for accurate count)
-        return True
-    if not args.limit:  # No limit specified, need all for full output
-        return True
-    
-    # Can use lazy loading: search with --limit, no filters, no inspection, no counting
-    return False
+from utils import load_json_records, load_excel_records, open_input_file, check_file_size
 
 
 class DataLoader:
@@ -56,7 +19,7 @@ class DataLoader:
             args: Parsed command-line arguments.
         """
         self.args = args
-        self.records: Union[List[Dict[str, Any]], Iterator[Dict[str, Any]]] = []
+        self.records: List[Dict[str, Any]] = []
         self.available_columns: List[str] = []
         self.records_count: Optional[int] = None
     
@@ -118,15 +81,11 @@ class DataLoader:
         
         self.available_columns = list(reader.fieldnames)
         
-        # Decide whether to load eagerly or lazily
-        use_lazy = not _should_load_eagerly(self.args)
-        if use_lazy:
-            self.records = reader
-            logging.debug("Using lazy loading mode for CSV search")
-        else:
-            self.records = list(reader)
-            self.records_count = len(self.records)
-            logging.debug("Using eager loading mode for CSV (loaded %d records)", self.records_count)
+        # Always eager load to ensure file can be closed safely
+        # Lazy loading would require keeping the file handle open
+        self.records = list(reader)
+        self.records_count = len(self.records)
+        logging.debug("Loaded %d records from CSV file", self.records_count)
     
     def _load_json(self, csvfile: Union[TextIO, io.StringIO]) -> None:
         """Load data from JSON file.

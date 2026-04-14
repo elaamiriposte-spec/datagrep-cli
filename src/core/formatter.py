@@ -7,7 +7,7 @@ import json
 import sys
 from typing import Any, Dict, List, TextIO, Union
 
-from ..utils import format_table
+from utils import format_table
 
 
 class OutputFormatter:

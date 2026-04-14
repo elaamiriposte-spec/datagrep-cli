@@ -4,7 +4,7 @@ import argparse
 import logging
 from typing import Any, Callable, Dict, Iterator, List, Union
 
-from ..utils import build_matcher, parse_where_condition
+from utils import build_matcher, parse_where_condition
 
 try:
     import tqdm

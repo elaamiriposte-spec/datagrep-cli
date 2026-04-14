@@ -9,7 +9,7 @@ description = "Search and filter CSV, JSON, and Excel records with flexible matc
 readme = "README.md"
 license = {text = "MIT"}
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "EL AAMIRI Essadeq", email = "elaamiriessadeq@gmail.com"},
 ]
 requires-python = ">=3.7"
 keywords = ["search", "filter", "csv", "json", "excel", "grep"]
@@ -34,11 +34,11 @@ excel = ["openpyxl>=3.0.0"]
 dev = ["pytest>=6.0", "black", "flake8", "pytest-cov"]
 
 [project.scripts]
-datagrep = "datagrep:main"
+datagrep = "cli:main"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/datagrep-cli"
-Issues = "https://github.com/yourusername/datagrep-cli/issues"
+Homepage = "https://github.com/elaamiriposte-spec/datagrep-cli"
+Issues = "https://github.com/elaamiriposte-spec/datagrep-cli/issues"
 
 [tool.black]
 line-length = 100
